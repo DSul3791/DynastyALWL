@@ -9,6 +9,7 @@ extends SceneTree
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
+const ServerAnimals := preload("res://src/stream/server_animals.gd")
 
 const DIR := "user://test_hunting_loop"
 const KEY_A := "hunt-key-0000000a"
@@ -257,6 +258,17 @@ func _init() -> void:
 
 	var cooking: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/cooking.json"))
 	check(str(JSON.stringify(cooking)).contains("\"raw_meat\":\"roast_meat\"") and float(cooking.get("cooked_life_mult", 2.0)) > 1.0, "raw meat roasts to a roast that keeps longer")
+
+	# Last, so the carcass ids above (each one's rolled parts) stay as they were. The animal's own body lies there (Dave 26 Nov 2026: not the hand-built one): its look, row number and the way it faced go with the carcass row and its save.
+	var shot: Dictionary = ServerAnimals.dead_body_of({"id": 4321, "num": 102, "heading": 0.5})
+	var own: int = items.make_carcass("deer", Vector3(7.0, 10.0, 5.0), -1, shot)
+	var own_extra: Dictionary = items._struct_extra(items._items[own])
+	check(int(own_extra.get("look", -1)) == 4321 and int(own_extra.get("num", 0)) == 102, "a carcass row names the dead animal's look and row number (%s)" % str(own_extra))
+	check(absf(angle_difference(deg_to_rad(float(own_extra["yaw"])), -0.5 - PI * 0.5)) < 0.01, "and lies the way it faced (yaw %.1f)" % float(own_extra["yaw"]))
+	var kept: Variant = JSON.parse_string(str(items._save_copy(own)["struct"]["state_json"]))
+	check(kept is Dictionary and int(kept.get("look", -1)) == 4321 and int(kept.get("num", 0)) == 102, "and its save keeps them (%s)" % str(kept))
+	var plain: int = items.make_carcass("deer", Vector3(9.0, 10.0, 5.0), -1)
+	check(plain != 0 and not items._struct_extra(items._items[plain]).has("look"), "a carcass with no animal named (admin, trap) sends no look")
 
 	print("Test done: %d pass, %d fail" % [passes, failures])
 	quit(1 if failures > 0 else 0)

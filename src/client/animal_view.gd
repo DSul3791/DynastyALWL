@@ -464,8 +464,7 @@ const BLOW_MAX_S := 2.0         # a strike or kick clip is cut here
 const HIT_AT := 0.45           # where in a strike or kick clip the blow lands, as a share of its length, when the model row gives no "hit_at"
 const ANIMALS_PATH := "res://data/animals/animals.json"
 static var _windups: Dictionary = {}   # kind -> {"strike": s, "kick": s}: each close blow's wind-up (animals.json defend rows), read once
-const DIE_MAX_S := 2.0         # short: the carcass is already on the ground there (carcass_look.gd), so the falling body goes soon
-const DIE_HOLD_S := 0.3        # the last pose of a death clip is held this long before the body goes
+const DIE_MAX_S := 2.0         # how long a death clip holds off the state's own clip (a killed body is out of the rows by then: nothing else plays)
 
 
 # A strike or kick begins (server_big_game _close_attack): the model's own attack clip plays once, sped so its blow (hit_at of the clip) lands
@@ -534,19 +533,266 @@ func _play_once(b: Dictionary, role: String, cap_s: float, land_in_s: float = 0.
 	return true
 
 
-# A killed animal with a death clip falls where it is drawn and goes after the clip: true when it does (the caller then drops it
-# from the rows without freeing it), false when it has none (it goes at once, as before).
+# Dead bodies (Dave 26 Nov 2026: "animals have nice models but when they die they fall over and become these strange low poly homemade
+# models. I think each model should have a die or death action ... if they dont lets find a way to just make the model fall over and die").
+# A killed model body stays where it fell and becomes the dead body: the carcass row the server puts there takes this very node
+# (dead_body, from inventory_view _make_carcass), so nothing is swapped and nothing jumps. A model with a death clip plays it and keeps its
+# last pose; one without tips onto its side about the edge it falls on (_tip_over), never sliding. A body whose carcass row never comes
+# (one shot beyond the item rows) waits while the player is far and goes once they are near and still no carcass came.
+const DEAD_WAIT_S := 10.0      # a fallen body near the player is kept this long for its carcass row
+const DEAD_FAR_S := 600.0      # one the player is far from (no carcass rows reach out there) at most this long
+const DEAD_NEAR_M := 80.0      # within this of the player the carcass row has come (the item rows reach 100 m)
+const DEAD_TAKE_M := 2.5       # a carcass row takes a fallen body of its kind this near it
+const TIP_S := 0.7             # a model with no death clip tips over in this long, faster as it goes (a fall, not a turn)
+var _fallen: Array = []        # [{"node", "kind", "until"}]: killed bodies lying where they fell, for their carcass rows
+
+
+# A killed body falls where it is drawn: true when it does (the caller drops it from the rows without freeing it; it is on _fallen), false
+# for a code-built body or a flock (it goes at once: the carcass row draws its own body).
 func _die(b: Dictionary) -> bool:
-	if not is_inside_tree() or not _play_once(b, "die", DIE_MAX_S):
+	var node: Node3D = b.get("node", null)
+
+	if not is_inside_tree() or node == null or not is_instance_valid(node) or not node.has_meta("model") or node.has_meta("flock_birds"):
 		return false
 
+	_fallen.append({"node": _fall(b), "kind": str(b["kind"]), "until": _t + DEAD_WAIT_S})
+	return true
+
+
+# The body's own death clip plays once and keeps its last pose; with none, the clip it was in stops and the body tips onto its side.
+# The node that now holds the body (the tipping pivot, or the body itself).
+func _fall(b: Dictionary) -> Node3D:
 	var node: Node3D = b["node"]
 
 	if node.has_meta("head_look"):
-		(node.get_meta("head_look") as SkeletonModifier3D).active = false      # the death clip's own head (head tracking stops)
+		(node.get_meta("head_look") as SkeletonModifier3D).active = false      # a dead head watches nobody
 
-	get_tree().create_timer(float(b["once_until"]) - _t + DIE_HOLD_S).timeout.connect(node.queue_free)
-	return true
+	if _play_once(b, "die", DIE_MAX_S):
+		return node
+
+	if node.has_meta("player"):
+		(node.get_meta("player") as AnimationPlayer).pause()      # the pose it was in when it died (a running deer falls mid-stride)
+
+	return _tip_over(node, TIP_S)
+
+
+# How far the body's right side lies from its middle, in its rig's space: the bones in the lower SIDE_BONES_SHARE of its height (body and
+# legs; antlers, horns and a raised head reach far out sideways and held the moose and an elk in the air: Lane A at c2643634), plus
+# SIDE_SKIN_SHARE of its height for the flesh over them. 0.2 with no skeleton; the mesh box's right edge with no bones in it.
+const SIDE_BONES_SHARE := 0.65
+const SIDE_SKIN_SHARE := 0.1
+
+func _side_m(node: Node3D) -> float:
+	var rig: Node3D = node.get_node_or_null("Rig")
+
+	if rig == null:
+		return 0.2
+
+	var skeletons: Array = rig.find_children("*", "Skeleton3D", true, false)
+
+	if skeletons.is_empty():
+		var box: AABB = _model_bounds(rig, rig.find_children("*", "MeshInstance3D", true, false), true)
+		return box.end.x if box.size.x > 0.01 else 0.2
+
+	var sk: Skeleton3D = skeletons[0]
+	var to_rig: Transform3D = _to_ancestor(sk, rig)
+	var points: Array = []
+
+	for i in sk.get_bone_count():
+		points.append(to_rig * sk.get_bone_global_pose(i).origin)
+
+	if points.is_empty():
+		return 0.2
+
+	var low: float = INF
+	var high: float = -INF
+
+	for p in points:
+		low = minf(low, (p as Vector3).y)
+		high = maxf(high, (p as Vector3).y)
+
+	var cut: float = low + (high - low) * SIDE_BONES_SHARE
+	var side: float = 0.0
+
+	for p in points:
+		if (p as Vector3).y <= cut:
+			side = maxf(side, (p as Vector3).x)
+
+	return side + (high - low) * SIDE_SKIN_SHARE
+
+
+# Puts a standing model on its side: a pivot at the right-hand edge of its box on the ground turns it a quarter turn about the line it
+# faces along, so that side ends on the ground and the body never slides. Over `seconds` (a fall that speeds up) or at once (0).
+# Returns the pivot, which takes the body's place under its parent.
+func _tip_over(node: Node3D, seconds: float) -> Node3D:
+	var edge: float = _side_m(node)
+	var pivot: Node3D = Node3D.new()
+	pivot.name = "Fallen"
+	pivot.set_meta("model", true)
+	pivot.transform = node.transform * Transform3D(Basis(), Vector3(edge, 0.0, 0.0))   # the body's own turn and size go to the pivot
+	var parent: Node = node.get_parent()
+
+	if parent != null:
+		parent.remove_child(node)
+		parent.add_child(pivot)
+
+	pivot.add_child(node)
+	node.transform = Transform3D(Basis(), Vector3(-edge, 0.0, 0.0))
+
+	if seconds <= 0.0 or not pivot.is_inside_tree():
+		pivot.rotation.z = -PI * 0.5
+	else:
+		pivot.create_tween().tween_property(pivot, "rotation:z", -PI * 0.5, seconds).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+
+	return pivot
+
+
+# The dead body a carcass row is drawn with (inventory_view _make_carcass): the fallen body of its kind lying within DEAD_TAKE_M of `at`
+# when there is one (it moves under the returned node as it enters the tree, where it is), else the animal's own model (look: its id, num:
+# its row number, from the server's make_carcass) already lying in its last pose. null when there is no model to draw (the caller draws
+# the old hand-built body).
+func dead_body(kind: String, look: int, num: int, at: Vector3) -> Node3D:
+	var root: Node3D = Node3D.new()
+	root.name = "DeadBody"
+	root.set_meta("dead_body", true)   # the name can change when many are added under one parent (shot runner: DeadBody2 ...)
+	var fallen: Node3D = _take_fallen(kind, at)
+
+	if fallen != null:
+		root.tree_entered.connect(_take_in.bind(root, fallen), CONNECT_ONE_SHOT)
+		return root
+
+	var number: int = -1
+
+	for n in KIND_OF_SPECIES:
+		if str(KIND_OF_SPECIES[n]) == kind:
+			number = int(n)
+
+	var model: Node3D = _make_model(number, maxi(look, 0), num >= YOUNG_NUM) if number > 0 else null
+
+	if model == null:
+		root.free()
+		return null
+
+	if num >= YOUNG_NUM and not model.has_meta("young_model"):
+		model.scale = Vector3.ONE * YOUNG_SCALE
+
+	_lay_dead(root, model)
+	return root
+
+
+# A fresh model put under its dead body's root, out of the tree: one with no death clip is tipped now (Lane A at 840c6068: tipping it in its
+# ready failed, "Parent node is busy adding/removing children", and it stood grazing); its pose is set once it is in the tree (_lie_dead).
+func _lay_dead(root: Node3D, model: Node3D) -> void:
+	root.add_child(model)
+
+	if not _death_clip(model):
+		_tip_over(model, 0.0)
+
+	model.request_ready()   # a body drawn before (it was in the tree once) gets its ready again
+	model.ready.connect(_lie_dead.bind(model), CONNECT_ONE_SHOT)   # once its skeleton and player are in the tree too
+
+
+# Whether a model's player has its death clip (role "die").
+static func _death_clip(model: Node3D) -> bool:
+	var player: AnimationPlayer = model.get_meta("player") if model.has_meta("player") else null
+	return player != null and str((player.get_meta("roles", {}) as Dictionary).get("die", "")) != "" and player.has_animation(str(player.get_meta("roles")["die"]))
+
+
+# The fallen body moves under its carcass row's node where it is, as it is: the row owns it from now on.
+static func _take_in(root: Node3D, fallen: Node3D) -> void:
+	if not is_instance_valid(fallen) or not is_instance_valid(root):
+		return
+
+	if fallen.is_inside_tree():
+		fallen.reparent(root, true)
+	else:
+		root.add_child(fallen)
+
+
+# A dead body drawn fresh (walked back to, a rejoin): its death clip's last pose, or its standing pose (already tipped by _lay_dead).
+# No node is moved here: its parent is still adding children.
+func _lie_dead(model: Node3D) -> void:
+	if not is_instance_valid(model):
+		return
+
+	if model.has_meta("head_look"):
+		(model.get_meta("head_look") as SkeletonModifier3D).active = false
+
+	var player: AnimationPlayer = model.get_meta("player") if model.has_meta("player") else null
+	var roles: Dictionary = player.get_meta("roles", {}) if player != null else {}
+	var clip: String = str(roles.get("die", ""))
+
+	if player != null and clip != "" and player.has_animation(clip):
+		player.play(clip)
+		player.seek(player.get_animation(clip).length, true)   # its last pose, kept (the copy does not loop)
+		return
+
+	if player != null and str(roles.get("0", "")) != "" and player.has_animation(str(roles["0"])):
+		player.play(str(roles["0"]))
+		player.seek(0.0, true)
+
+	if player != null:
+		player.pause()
+
+
+# The fallen body of `kind` within DEAD_TAKE_M of `at`, taken off _fallen; or a live body there whose row has not yet gone although a hit
+# landed by it (the carcass row came first): it falls now. null when there is none.
+func _take_fallen(kind: String, at: Vector3) -> Node3D:
+	for i in range(_fallen.size() - 1, -1, -1):
+		var f: Dictionary = _fallen[i]
+
+		if not is_instance_valid(f["node"]):
+			_fallen.remove_at(i)
+			continue
+
+		var p: Vector3 = (f["node"] as Node3D).global_position
+
+		if str(f["kind"]) == kind and Vector2(p.x - at.x, p.z - at.z).length() <= DEAD_TAKE_M:
+			_fallen.remove_at(i)
+			return f["node"]
+
+	var now: int = Time.get_ticks_msec()
+	var best: Variant = null
+	var best_m: float = DEAD_TAKE_M
+
+	for id in _bodies.keys():   # the nearest one only: a herd mate beside the kill is not the one that died
+		var b: Dictionary = _bodies[id]
+
+		if str(b["kind"]) != kind or not is_instance_valid(b["node"]) or not (b["node"] as Node3D).is_inside_tree():
+			continue
+
+		var p: Vector3 = (b["node"] as Node3D).global_position
+		var d: float = Vector2(p.x - at.x, p.z - at.z).length()
+
+		if d <= best_m and killed_by_hit(p, _hits, now):
+			best_m = d
+			best = id
+
+	if best == null:
+		return null
+
+	var shot: Dictionary = _bodies[best]
+	_bodies.erase(best)
+	fell.emit(kind, (shot["node"] as Node3D).global_position, kind in SMALL_FALL_KINDS)
+
+	if _die(shot):
+		return _fallen.pop_back()["node"]
+
+	(shot["node"] as Node3D).queue_free()
+	return null
+
+
+# Fallen bodies no carcass row took: near the player after DEAD_WAIT_S, else after DEAD_FAR_S.
+func _clear_fallen(me: Vector3) -> void:
+	for i in range(_fallen.size() - 1, -1, -1):
+		var f: Dictionary = _fallen[i]
+		var node: Node3D = f["node"]
+
+		if not is_instance_valid(node):
+			_fallen.remove_at(i)
+		elif _t >= float(f["until"]) and (_t >= float(f["until"]) + DEAD_FAR_S or me == Vector3.INF or node.global_position.distance_to(me) <= DEAD_NEAR_M):
+			node.queue_free()
+			_fallen.remove_at(i)
 
 
 # The kind and place of the nearest animal attacking or charging within `max_m` of `at` ({} when none): who bit you, for its snarl.
@@ -914,6 +1160,9 @@ func _process_body(delta: float) -> void:
 	if int(clock_ms.call()) - _report_ms >= REPORT_MS:
 		_report_ms = int(clock_ms.call())
 		_report(me)
+
+	if not _fallen.is_empty():
+		_clear_fallen(me)
 
 	for id in _bodies:
 		var b: Dictionary = _bodies[id]

@@ -2,6 +2,10 @@
 
 All Fixed Bugs Go here.
 
+## 185. Running water sounded like a windstorm, even when slow
+
+**Found by:** Dave, 26 Nov 2026: "river running sounds shouldnt be so loud if the water isnt running real fast. right now any moving water sounds like a windstorm"; "slow water should have no ripple sounds other than fish jumping or splashing". Priority (R-CORE-GROUND-WATER-FIRST). Brook and river water slower than 0.4 m/s makes no sound, unless the reach is steep. From there the sound rises 18 dB to full at 1 m/s, and faster water adds at most 3 dB. Rivers now play the brook recording instead of the generated steady noise. Fish splashes and lake laps are unchanged. Fixed by PR #2020, merged to dev at 85d3a5b6. Automated: test_water_width on Lane B. Not yet played.
+
 ## 49. Shovel name
 
 Dave asked on 16 Nov 2026 for every Spade to be called a Shovel, including icons and internal names. Fixed by PR #1182, merged to dev at bcd02908. Verified in a Dave play test on 19 Nov 2026 ("Yes it is now called shovel in game").
@@ -2075,3 +2079,9 @@ Now the grid's bottom left point sits at the crosshair (on the bed or metre cell
 **Found by:** the picture checker's held-item sweep, 26 Nov 2026 (bronze, copper and iron sickle): "regular white specks along the blade". **Status: Fixed by PR #2015.** Cause: `basic_look.gd` "sickle" drew the plain sickle's pale flint teeth on every tier, so a cast or forged blade carried a row of pale boxes. The teeth are now drawn on the plain sickle only. Guarded by `test_tool_looks` (each metal sickle has fewer vertices than the plain one). Not yet played. Not visually checked.
 
 **Closed when PR #2015 merges in dev with its gate passed** (R-TEAM-CLOSE-FIXED); it reopens only if Dave or a tester reports it again.
+
+## 184. Killed animals turn into a hand-built low-poly body
+
+**Closed 27 Nov 2026** (R-TEAM-CLOSE-FIXED): the fix is merged in dev with its gate passed; it reopens only if Dave or a tester reports it again. Dave watched the Lane A test run: "I just saw the test of the dead animals they look good enough. Im happy".
+
+**Found by:** Dave in play, 26 Nov 2026: "animals have nice models but when they die they fall over and become these strange low poly homemade models. I think each model should have a die or death action. check them and if they dont lets find a way to just make the model fall over and die. they currently look terrible". **Status: Fixed in dev (PR #2017), not yet played.** Cause: a kill puts a carcass row on the ground, drawn by `carcass_look.gd` (an ellipsoid with stick legs, 300-390 triangles); the real model played its death clip for at most 2 s and was then freed. Now the falling model itself becomes the dead body: the carcass row takes that very node where it lies (`animal_view.gd dead_body`, from `inventory_view.gd _make_carcass`), so nothing is swapped. A look with a death clip (bears, wolf, fox, elk, pronghorn, beaver, chamois, rat, cow, chickens, cat, leopard, tiger, rhino, elephant, camel, 4 of 7 deer looks) plays it and keeps its last pose; a look without one (moose, boar, rabbit, horse, lion and the rest) stops in the pose it died in and tips onto its side over 0.7 s about the edge of its box (`_tip_over`), never sliding. The server keeps the animal's look id, row number (young) and facing on the carcass and its save (`server_animals.dead_body_of`, `server_items.make_carcass`), so a body seen later or after a restart is the same animal, drawn already lying in that end pose. The hand-built body stays only where no model file is there. Name, knife, carry, trap catches and loot unchanged. Guarded by `test_animal_once` (the fall, the tip, the hand-over, the wait) and `test_hunting_loop` (look, row number, facing and save on the carcass). Not yet played.
