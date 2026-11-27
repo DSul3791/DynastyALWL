@@ -12,6 +12,7 @@ const FAR_KEEP_MS := 1200       # far off that a batch left out is kept this lon
 const SPYGLASS_DRAWN := 60      # while an admin looks through the spyglass the server sends up to 60 within 300 m (animals.json "spyglass")
 const MODELS_PATH := "res://data/animals/models.json"
 const BoneOffsetsScript := preload("res://src/client/bone_offsets.gd")
+const TailDragScript := preload("res://src/client/tail_drag.gd")         # a tail laid on the ground over every clip (the alligator)
 const RowParts := preload("res://src/shared/row_parts.gd")   # a batch over one packet comes in parts (protocol 171)
 const HeadLookScript := preload("res://src/client/head_look.gd")       # the head turns to watch a player (docs/design/ANIMAL_GAIT.md "Head tracking")
 const BreathLook := preload("res://src/client/breath_look.gd")   # head_bone_of: where an animal breathes from in the cold
@@ -1610,6 +1611,18 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 
 			if not missing.is_empty():
 				_model_note(kind, "bone_offsets: no bone %s" % ", ".join(missing))
+
+	# A tail dragged on the ground over every clip (tail_drag.gd: the alligator's borrowed cat, dog and fox clips hold it up).
+	if row.has("tail_drag"):
+		var tail_sks: Array = inst.find_children("*", "Skeleton3D", true, false)
+
+		if not tail_sks.is_empty():
+			var drag: SkeletonModifier3D = TailDragScript.new()
+			var no_bones: PackedStringArray = drag.setup(tail_sks[0], row["tail_drag"])
+			(tail_sks[0] as Skeleton3D).add_child(drag)
+
+			if not no_bones.is_empty():
+				_model_note(kind, "tail_drag: no bone %s" % ", ".join(no_bones))
 
 	# The head turns to watch a player (head_look.gd); a row with "head_look": false keeps its clip's head.
 	var head_bone: Array = BreathLook.head_bone_of(inst) if bool(row.get("head_look", true)) else []

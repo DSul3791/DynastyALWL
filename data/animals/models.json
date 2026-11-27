@@ -2554,37 +2554,50 @@
 			}
 		},
 		"alligator": {
-			"scene": "res://assets/animals/alligator/SK_AmericanAligator.fbx",
-			"pack": "WildMesh3D/Realistic Animals/AmericanAligator",
+			"scene": "res://assets/animals/alligator/Alligator_Al.glb",
+			"pack": "Dave's own model (Alligator_Al.glb, 27 Nov 2026)",
 			"scale": 1.0,
 			"yaw_deg": 180,
 			"walk_mps": 0.8,
+			"trot_mps": 3.0,
 			"run_mps": 6.0,
 			"swim_mps": 2.0,
 			"stride_m": 0.8,
 			"clips": {
-				"0": "Idle",
-				"3": "Low pose",
-				"10": "Idle call shared",
-				"11": "Sprint fwd",
-				"12": "Idle",
-				"walk": "Walk fwd",
-				"run": "Sprint fwd",
-				"swim": "Swim fwd surface"
+				"0": "fox_mon_xiaohuli_01_idle1",
+				"3": "cat_idle2",
+				"10": "cat_idle2",
+				"11": "Running",
+				"12": "fox_mon_xiaohuli_01_idle1",
+				"walk": "cat_walk",
+				"run": "Running",
+				"19": "cat_shuijiao",
+				"bite": "leopard_skill_feipu",
+				"strike": "leopard_skill_shuaiwei",
+				"die": "leopard_dead"
 			},
-			"note": "WildMesh American Alligator (Realistic Animals/AmericanAligator/SK_AmericanAligator.fbx). In the water it plays its swim clip (role swim, client water level). Clips checked 8 Nov 2026; it lies low, so its walk and call clips read under half its imported height: flat_share 0.3.",
-			"length_m": 3.8,
-			"materials": [
-				{
-					"match": "Eye",
-					"albedo": "res://assets/animals/alligator/Textures/T_American_Alligator_Eye.png"
-				},
-				{
-					"match": "",
-					"albedo": "res://assets/animals/alligator/Textures/T_American_Alligator.png"
-				}
+			"idle_variants": {
+				"0": [
+					"cat_idle2"
+				]
+			},
+			"tail_drag": [
+				"tail_01",
+				"tail1",
+				"tail2",
+				"tail3",
+				"tail_05",
+				"tail4",
+				"tail_07",
+				"tail_08"
 			],
-			"flat_share": 0.3
+			"note": "Dave's Alligator_Al.glb (27 Nov 2026): its clips are borrowed from cats, a dog, a fox and a leopard. Dave: \"ignore the dog walk its terrible\", so Walking is never used: walk is cat_walk, the run and charge the dog's Running, the lie the cat's sleep (cat_shuijiao), the bite the leopard's pounce (feipu), the strike its tail swipe (shuaiwei), the death leopard_dead. No swim or hit clip: in water it plays its state's clip. tail_drag (src/client/tail_drag.gd) lays the tail on the ground over every clip (Dave: \"all the actions need to let the tail drag on the ground\"). ground_m and the lie's lift were worked out off line from the file's bones and skin (thread, 27 Nov 2026); tools/ground_check.gd on Lane A confirms them.",
+			"length_m": 3.8,
+			"flat_share": 0.3,
+			"ground_m": -0.04,
+			"ground_clips": {
+				"cat_shuijiao": 0.3
+			}
 		}
 	}
 }
