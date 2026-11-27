@@ -55,7 +55,18 @@ const CLIP_MAP := {
 	# Sitting ON a seat (E on a chair, stool, log seat or bench; Dave 5 Nov 2026 "we need a sitting on a chair action"): the same chair clip held on its first frame
 	# (_hold_first), not turned into the ground sit. Its hips are 0.51 m up, about 0.28 m behind the feet, hands on the thighs: the seats are all 0.45 m high (piece_look.gd).
 	"sit_chair": ["Chair_Sit_Idle_M", 0.0, -1.0, true, 1.0],
-	"lie": ["Sleep_Normally", 0.0, -1.0, true, 1.0],
+	"lie": ["Sleep_Normally", 0.0, -1.0, true, 1.0],     # lying at rest only: on a bed, asleep or fainted (avatar_driver.gd lie_rest)
+	# The stealthy crawl, lying off a bed (Dave, QA #10, 25 Nov 2026). Dave's set has no low belly crawl and no prone idle; both glbs hold only Crawl_Backward and
+	# Crawl_and_Look_Back, both on hands and knees. Checked offline (bone positions from the files, tools/clip_slide.py): Crawl_Backward's hands and left knee barely move
+	# against the body while it travels 0.3 m a loop, so it slides and is not used. Crawl_and_Look_Back between 0.83 and 1.63 s is one stride (the looking back left out);
+	# retimed 1.4 its planted hand moves at about the crawl's 0.4 m/s (stance.gd CRAWL_MPS; avatar_driver.gd speed_scale follows the real pace); backwards is the same stride
+	# played backwards (REVERSED_CLIPS). Lying still ("prone") is the last frame of Dead: flat on the belly, head toward the facing, arms and legs on the ground. Lane A's
+	# picture of the first prone (Crawl_Backward's first frame, 25 Nov 2026) floated, arms raised; Dead's last frame also sits 12 cm up (its lowest joint, a foot), so its
+	# hips are lowered PRONE_DROP_CM to put that joint 3 cm up, as the standing Idle's toes are. Dave, 26 Nov 2026, told there is no low or belly crawl in his files:
+	# "use those". The crawl stride also floats (its wrists never below 12 cm), so it is lowered CRAWL_DROP_CM; its feet still move 10 to 28 cm while low.
+	"crawl": ["Crawl_and_Look_Back", 0.833, 1.633, true, 1.4],
+	"crawl_back": ["Crawl_and_Look_Back", 0.833, 1.633, true, 1.4],
+	"prone": ["Dead", 2.95, -1.0, true, 1.0],
 	# Heavy_Hammer_Swing is 1.83 s and holds ONE blow, read from the hand's height in the playing clip (1 Nov 2026): the stance dips at 0.46 s, the hands rise from 0.5 s to the top at 1.2 s, and
 	# the strike comes down from 1.4 s, fastest at 1.53 s, hands lowest at 1.73 s; the clip ends at 1.83 s. (The speed peak at 0.73 s is the rise, not a blow.) The game wants the blow at 0.5 s
 	# of 0.95 s (0.52 of 1.0 for the pick, held_item.gd HIT_AT), so the rise is squeezed before the impact (taken at 1.68 s, the hands nearly at their lowest) and the short follow-through is
@@ -80,6 +91,10 @@ const CLIP_MAP := {
 	"stand_up": ["Sit_to_Stand_Transition_M", 0.0, -1.0, false, 1.0],
 	"wake_up": ["Wake_Up_and_Look_Up", 0.0, -1.0, false, 1.0],
 }
+
+const CRAWL_DROP_CM := 8.0   # the crawl stride lowered so the planted wrists sit about 4 cm up (CLIP_MAP "crawl"; Dave's body: wrists 12 cm at their lowest, toes 14.5)
+const PRONE_DROP_CM := 9.4   # Dead's last frame lowered to the ground (CLIP_MAP "prone"; both glbs: lowest joint 12.4 cm up, the standing Idle's 3 cm)
+const REVERSED_CLIPS := ["crawl_back"]   # game clips made by playing their source backwards (crawling backwards: the forward stride reversed)
 
 static var _scenes: Dictionary = {}            # model id -> its PackedScene, once available() found it usable
 static var _checked: Dictionary = {}           # model id -> false (the glb cannot be used) or true; missing: not tried yet
@@ -458,6 +473,15 @@ static func _make_library(own: Dictionary, skel: Skeleton3D) -> AnimationLibrary
 
 		var made: Animation = _clip(own[str(row[0])], float(row[1]), float(row[2]), bool(row[3]), float(row[4]), row[5] if row.size() > 5 else [])
 
+		if game_name == "crawl" or game_name == "crawl_back":
+			_lower_hips(made, CRAWL_DROP_CM)
+
+		if game_name in REVERSED_CLIPS:
+			made = _reversed(made)
+		elif game_name == "prone":
+			_hold_first(made)
+			_lower_hips(made, PRONE_DROP_CM)
+
 		if game_name == "sit":
 			_hold_first(made)
 			_ground_sit(made, own.get("Idle", made), skel)
@@ -561,6 +585,31 @@ static func _clip(src: Animation, from: float, to: float, loop: bool, retime: fl
 	return out
 
 
+# A copy of `anim` played backwards: every key at time t moves to length - t (the hips travel was already taken out by _clip, so the copy stays on the spot; a hand
+# planted on the ground then moves forward under the body, as it must going backwards).
+static func _reversed(anim: Animation) -> Animation:
+	var out: Animation = Animation.new()
+	out.length = anim.length
+	out.loop_mode = anim.loop_mode
+
+	for t in range(anim.get_track_count()):
+		var type: int = anim.track_get_type(t)
+		var track: int = out.add_track(type)
+		out.track_set_path(track, anim.track_get_path(t))
+
+		for k in range(anim.track_get_key_count(t)):
+			var when: float = anim.length - anim.track_get_key_time(t, k)
+
+			if type == Animation.TYPE_POSITION_3D:
+				out.position_track_insert_key(track, when, anim.track_get_key_value(t, k))
+			elif type == Animation.TYPE_ROTATION_3D:
+				out.rotation_track_insert_key(track, when, anim.track_get_key_value(t, k))
+			else:
+				out.scale_track_insert_key(track, when, anim.track_get_key_value(t, k))   # _clip makes only position, rotation and scale tracks
+
+	return out
+
+
 # Turns the chair clip into sitting cross-legged on the ground (Dave QA BUG-020: X sat him as if on a chair). Dave's set has no floor-sit clip, so the chair pose is changed in place:
 # the hips drop to about 14 cm off the ground, each thigh swings out sideways (the model faces +Z, its right is -X) and each shin folds back under the other leg. The turns are
 # made in the parent bone's frame, which for this Mixamo rig is close to the model's own axes. Angles are a first guess, not yet seen in the game: rate by picture (--shot-stance=sit).
@@ -575,6 +624,14 @@ const SIT_SPINE_BACK_DEG := 0.3       # each of Spine, Spine1 and Spine2 leans b
 # the ground sit those turns became a lunge with the body off the ground (PC shot 5 Nov, main 60eadc63, read at a random time in the loop). The ground sit holds the clip's first
 # frame (the one tools/sit_pose_sim.py and tools/body_pose_shot.gd checked) on every key; only the neck and head keep half of their motion, so he still looks about.
 const SIT_LOOK_KEEP := 0.5
+
+
+# The hips moved down `cm` centimetres (the skeleton is in centimetres) in every key: a held pose that sits above the ground put on it.
+static func _lower_hips(anim: Animation, cm: float) -> void:
+	for t in range(anim.get_track_count()):
+		if anim.track_get_type(t) == Animation.TYPE_POSITION_3D and String(anim.track_get_path(t)).ends_with(P + "Hips"):
+			for k in range(anim.track_get_key_count(t)):
+				anim.track_set_key_value(t, k, (anim.track_get_key_value(t, k) as Vector3) - Vector3(0.0, cm, 0.0))
 
 
 static func _hold_first(anim: Animation, keep_look: bool = true) -> void:

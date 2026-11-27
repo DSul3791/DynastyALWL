@@ -20,9 +20,10 @@ func check(ok: bool, what: String) -> void:
 		failures += 1
 
 
-# Where `side`'s closed fingers hold (dynasty_arms.gd GRIP_AT) in camera space, the arms at the camera pose (held_item.gd ARMS_POS, ARMS_PITCH_DEG, ARMS_SCALE).
+# Where `side`'s closed fingers hold (dynasty_arms.gd GRIP_AT) in camera space, the arms at the camera pose (held_item.gd ARMS_POS, ARMS_PITCH_DEG, ARMS_SCALE),
+# moved BOW_SIGHT_RIGHT_M to the right as they are while the bow is in hand (held_item.gd _place_arms, BugsList 180).
 func _grip_at(arms, side: String) -> Vector3:
-	var rig: Transform3D = Transform3D(Basis(Vector3.RIGHT, deg_to_rad(HeldItem.ARMS_PITCH_DEG)).scaled(Vector3.ONE * HeldItem.ARMS_SCALE), HeldItem.ARMS_POS)
+	var rig: Transform3D = Transform3D(Basis(Vector3.RIGHT, deg_to_rad(HeldItem.ARMS_PITCH_DEG)).scaled(Vector3.ONE * HeldItem.ARMS_SCALE), HeldItem.ARMS_POS + Vector3(HeldItem.BOW_SIGHT_RIGHT_M, 0.0, 0.0))
 	var skeleton: Skeleton3D = arms.skeleton
 	var hand: Transform3D = skeleton.get_bone_global_pose(skeleton.find_bone("hand_" + side))
 	return rig * (hand * Vector3(DynastyArms.GRIP_AT[side]))
@@ -39,18 +40,27 @@ func _run() -> void:
 	var player: AnimationPlayer = arms.animation_player
 	check(player.has_animation("bow_draw") and not player.has_animation("bow_idle"), "the arms have the bow clip (the first-person idle is bow_draw at 0, ready to shoot)")
 
-	# The bow's plane runs through the eye (the string lies along the stave from the eye), the nock point 3 cm above the grip (ragdoll_body.gd BOW_ARM_L).
-	for step in [[0.0, Vector3(-0.012, -0.070, -0.24)], [1.0, Vector3(-0.012, -0.070, -0.10)]]:
+	# The pose is solved with the bow's plane through the eye (ragdoll_body.gd BOW_ARM_L), the nock point 3 cm above the grip; in play the arms sit BOW_SIGHT_RIGHT_M
+	# to the right of that (Dave 26 Nov 2026, BugsList 180: the bow had stood between the eye and the crosshair), so every hand point and the plane move right by it.
+	var shift: Vector3 = Vector3(HeldItem.BOW_SIGHT_RIGHT_M, 0.0, 0.0)
+
+	for step in [[0.0, Vector3(-0.012, -0.070, -0.24) + shift], [1.0, Vector3(-0.012, -0.070, -0.10) + shift]]:
 		player.play("bow_draw")
 		player.seek(float(step[0]) * player.get_animation("bow_draw").length * 0.999, true)
 		player.advance(0.0)
 		await process_frame
 		var left: Vector3 = _grip_at(arms, "l")
 		var right: Vector3 = _grip_at(arms, "r")
-		check(left.distance_to(Vector3(-0.018, -0.10, -0.40)) < 0.02, "draw %.0f: the left hand closed round the grip at arm's length (%.3f, %.3f, %.3f)" % [float(step[0]), left.x, left.y, left.z])
+		check(left.distance_to(Vector3(-0.018, -0.10, -0.40) + shift) < 0.02, "draw %.0f: the left hand closed round the grip at arm's length (%.3f, %.3f, %.3f)" % [float(step[0]), left.x, left.y, left.z])
 		check(right.distance_to(step[1]) < 0.02, "draw %.0f: the right hand's fingers on the string at (%.3f, %.3f, %.3f), wanted (%.3f, %.3f, %.3f)" % [float(step[0]), right.x, right.y, right.z, step[1].x, step[1].y, step[1].z])
-		var plane: Vector3 = Vector3(cos(deg_to_rad(HeldItem.BOW_CANT_DEG)), -sin(deg_to_rad(HeldItem.BOW_CANT_DEG)), 0.0)   # the canted bow's plane through the eye
-		check(absf(left.dot(plane)) < 0.01 and absf(right.dot(plane)) < 0.01, "draw %.0f: grip and string hand in the bow's plane through the eye (%.3f, %.3f)" % [float(step[0]), left.dot(plane), right.dot(plane)])
+		var plane: Vector3 = Vector3(cos(deg_to_rad(HeldItem.BOW_CANT_DEG)), -sin(deg_to_rad(HeldItem.BOW_CANT_DEG)), 0.0)   # the canted bow's plane, its normal
+		var off: float = shift.dot(plane)   # the plane runs this far right of the eye
+		check(absf(left.dot(plane) - off) < 0.01 and absf(right.dot(plane) - off) < 0.01, "draw %.0f: grip and string hand in the bow's plane, %.3f m right of the eye (%.3f, %.3f)" % [float(step[0]), off, left.dot(plane), right.dot(plane)])
+		# Where the canted upper limb crosses the crosshair's height (the eye's level): to the right of the line of sight, by a few degrees, not over it.
+		var limb_up: Vector3 = Vector3(sin(deg_to_rad(HeldItem.BOW_CANT_DEG)), cos(deg_to_rad(HeldItem.BOW_CANT_DEG)), 0.0)
+		var at_eye: Vector3 = left + limb_up * (-left.y / limb_up.y)
+		var right_deg: float = rad_to_deg(atan2(at_eye.x, -at_eye.z))
+		check(right_deg > 6.0 and right_deg < 12.0, "draw %.0f: the upper limb passes the crosshair %.1f degrees to its right (6 to 12 wanted: the target stays in sight)" % [float(step[0]), right_deg])
 
 	# The grip shape (dynasty_arms.gd _grip_shape) on two points of a left hand: a finger point past the bend wraps round the bar at its own distance; the palm stays.
 	var finger: Vector3 = Vector3(0.0, -0.15, 0.02)
