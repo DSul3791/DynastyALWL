@@ -12,7 +12,8 @@ const FlameRules := preload("res://src/shared/flame_rules.gd")
 const MineSites := preload("res://src/worldgen/runtime/mine_sites.gd")   # what an abandoned mine left behind (cave scatter kind 2)
 const WaterFlowScript := preload("res://src/stream/water_flow.gd")
 const ShoreRules := preload("res://src/shared/shore_rules.gd")
-const BoulderWear := preload("res://src/shared/boulder_wear.gd")   # a worked rock's size now (Dave 21 Nov 2026: shrinks from the first blow)
+const BoulderWear := preload("res://src/shared/boulder_wear.gd")
+const BoulderFall := preload("res://src/shared/boulder_fall.gd")   # a dug-under boulder's drop and who it lands on (boulders step 2)   # a worked rock's size now (Dave 21 Nov 2026: shrinks from the first blow)
 const SnowWalk := preload("res://src/shared/snow_walk.gd")   # walking on snow and snowshoes (Part C plan 7)
 const FellPose := preload("res://src/flora/fell_pose.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -514,6 +515,7 @@ var send_items_moved: Callable      # (peer, ids PackedInt32Array, positions Pac
 var send_logs_moved: Callable       # (peer, ids PackedInt32Array, positions PackedVector3Array, poses PackedVector3Array of [rot_y, pitch, spin] radians): loose logs that moved (protocol 125)
 var animals_near: Callable           # (point, radius) -> Array of {id, sp, pos}: the animals a snare can reach (set by the server)
 var animal_snare: Callable           # (animal id) -> bool: a snare closes on it, it leaves the world (set by the server)
+var crush_animal: Callable           # (animal id, share of its health taken): a falling boulder lands on it or strikes it (_boulder_fell; set by the server)
 var trail_strength: Callable         # (x, z) -> how worn the game trail is there, 0 to 1 (set by the server)
 var run_distance: Callable           # (x, z, kind) -> metres to the nearest trail between animal places of that kind (-1 any), INF only when none is found and ground that could hold a nearer one is not worked out, 10 when no trail is nearer (server_ranges.gd route_distance)
 var fox_near: Callable              # (x, z, m) -> a fox earth lies within m, in worked-out ground (server_ranges.gd fox_near; stage 2b)
@@ -3677,9 +3679,15 @@ func settle_loose_near(centre: Vector3, radius: float, fill: bool = false) -> vo
 				var rest: Vector3 = _settled(it["pos"])
 
 				if rest != it["pos"]:
+					var from: Vector3 = it["pos"]
 					it["pos"] = rest
 					_refile(id)
 					_dirty = true
+
+					if (info.get("skirt", []) as Array).size() >= 3:
+						info["skirt"][2] = snappedf(float(info["skirt"][2]) + from.y - rest.y, 0.01)   # its talus stays on the ground where it lay
+
+					_boulder_fell(from, rest, size_now)
 
 			continue
 
@@ -3703,6 +3711,48 @@ func settle_loose_near(centre: Vector3, radius: float, fill: bool = false) -> vo
 		_refile(id)
 		_wake_log(id)   # a log on ground that was dug or filled under it may roll
 		_dirty = true
+
+
+# A boulder dug under came down from `from` to `to` (boulders step 2, BoulderFall): whoever and whatever it lands on is crushed, dead, even
+# with nothing else killing (Dave 27 Nov 2026, R-RES-BOULDER-HARM, his own exception to R-CORE-NO-DEATH); its side striking someone as it
+# comes down leaves them at BoulderFall.GLANCE_HP, and from a big drop knocks them out (the strain faint, as a long fall). Only the players
+# and the animals round it are looked at.
+func _boulder_fell(from: Vector3, to: Vector3, r: float) -> void:
+	var drop: float = from.y - to.y
+
+	if drop < BoulderFall.HARM_DROP_M:
+		return
+
+	for peer in _peer_pos.keys():
+		var what: int = BoulderFall.hit(r, from, to, BOULDER_TOP_SHARE, _peer_pos[peer])
+
+		if what == BoulderFall.CRUSHED and kill(peer, "crushed by a boulder"):
+			continue
+
+		var v: Dictionary = vitals_of(peer)
+
+		if what == BoulderFall.NONE or v.is_empty() or _parked.has(peer):
+			continue
+
+		v["health"] = minf(float(v["health"]), 1.0 if what == BoulderFall.CRUSHED else BoulderFall.GLANCE_HP)   # crushed with death off: as near as it gets
+		_say(peer, "The boulder came down on you." if what == BoulderFall.CRUSHED else "The falling boulder struck you a glancing blow.")
+
+		if (what == BoulderFall.CRUSHED or drop >= BoulderFall.GLANCE_FAINT_M) and not _exertion_cfg.is_empty():
+			_strain[peer] = {"s": float(_exertion_cfg.get("faint_at", 1.4)) + 0.05, "state": 1, "t": 0.0, "black": 1.0, "going": true}   # out on the next tick; they wake and can get help
+
+		if not _forced_sleep(peer):
+			_asleep.erase(peer)
+
+		_sync_vitals(peer, true)
+
+	if not animals_near.is_valid() or not crush_animal.is_valid():
+		return
+
+	for row in animals_near.call(to, r + BoulderFall.GLANCE_M + 1.0):
+		var what: int = BoulderFall.hit(r, from, to, BOULDER_TOP_SHARE, row["pos"])
+
+		if what != BoulderFall.NONE:
+			crush_animal.call(int(row["id"]), 1.0 if what == BoulderFall.CRUSHED else BoulderFall.GLANCE_ANIMAL_SHARE)
 
 
 # Round 7 (physical world audit, 23 Nov 2026: what players change in the ground): a fill left every stack, chest and fire under it buried and a dig
@@ -7207,6 +7257,7 @@ func _place_fire_site(peer: int, spot: Vector3, row: Dictionary) -> void:
 		"struct": {"kind": str(row["structure"]), "yaw": 0.0, "owner": str(_peer_key.get(peer, "")), "site": {"bp": int(row["number"]), "have": {}}}}
 	_items[_next_id] = entry
 	_grid_add(_next_id, entry)
+	_bare_skirts_near(entry["pos"], 1.0)
 	_next_id += 1
 	_say(peer, "Blueprint down. Hit it with a hammer to add the materials.")
 	_dirty = true
@@ -9062,7 +9113,7 @@ func _cell_info(ids: Array, rec_memo: Dictionary) -> Array:
 # _sync_record's signature for a record with no struct, fire or tree (a rock, a boulder, a stone, anything loose), worked out without it:
 # the full sync looks at thousands of these each second (sync by change step 3, 26 Nov 2026). test_sync_by_change holds them equal.
 func _plain_sig(it: Dictionary) -> int:
-	return int(it["count"]) + 1000 * (BOULDER_STATE if it.has("boulder") else 0) + 100000 * int(it["number"]) + 1000000000 * int(round(it["pos"].y * 10.0))
+	return int(it["count"]) + 1000 * (BOULDER_STATE if it.has("boulder") else 0) + 100000 * int(it["number"]) + 1000000000 * int(round(it["pos"].y * 10.0)) + ((1 << 60) if it.has("boulder") and (it["boulder"] as Dictionary).has("bare") else 0)   # bare: its talus taken off under a building, sent again
 
 
 # A record's row for send_world_items: [id, number, count, position, state, extras]. `rec` is its _sync_record, `site_view` this player's
@@ -10923,6 +10974,7 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 	var cell_bits: int = ((cell.x & 0xfffff) << 28) | ((cell.y & 0xfffff) << 8)
 	var journey_mid: float = float(resource_context.call("journey_at", mid.x, mid.y)) if resource_context != null else -1.0
 	var built: Array = []   # positions of what stands near the cell (looked up once, and only when it lays something)
+	var pieces: Array = []   # of those, the built pieces and fires (not the players): no talus is laid under them (_skirt_clear)
 	var taken: Array = []   # [x, z, radius] of the rocks lying near the cell: older boulders and those laid here, so no two overlap
 	var looked: Array = [false]
 	var wet: Callable = reads["water_near"]
@@ -10964,7 +11016,7 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 
 		if not bool(looked[0]):
 			looked[0] = true
-			_rock_field_neighbours(mid, h0, cell_m, cfg, built, taken)
+			_rock_field_neighbours(mid, h0, cell_m, cfg, built, taken, pieces)
 
 		if not _rock_field_clear(x, z, radius, float(cfg.get("keep_clear_m", 4.0)), built, taken):
 			return false
@@ -10978,7 +11030,7 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 			# crag.sink_share of its radius; it has no apron (nothing loose stays on a face that steep).
 			row["tilt"] = [snappedf((float(ground.call(x + 1.0, z)) - float(ground.call(x - 1.0, z))) * 0.5, 0.01), snappedf((float(ground.call(x, z + 1.0)) - float(ground.call(x, z - 1.0))) * 0.5, 0.01)]
 			sink = radius * float(crag.get("sink_share", 0.3))
-		elif kind in ["scree", "high", "top"] and radius >= float(cfg.get("apron_from_m", 0.8)):
+		elif kind in ["scree", "high", "top"] and radius >= float(cfg.get("apron_from_m", 0.8)) and _skirt_clear(spot, radius * (FOOT_SKIRT_REACH if foot_field else SKIRT_REACH), pieces):
 			# The client lays an apron of broken stones round a big mountain rock (look only, inventory_view _skirt_mesh): the ground's fall per
 			# metre along x and z, and how deep the rock is set (the apron lies on the ground, not at the rock's sunk middle).
 			row["skirt"] = [snappedf((float(ground.call(x + 1.0, z)) - float(ground.call(x - 1.0, z))) * 0.5, 0.01), snappedf((float(ground.call(x, z + 1.0)) - float(ground.call(x, z - 1.0))) * 0.5, 0.01), snappedf(sink, 0.01)]
@@ -11172,7 +11224,7 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 
 		if not bool(looked[0]):
 			looked[0] = true
-			_rock_field_neighbours(mid, h0, cell_m, cfg, built, taken)
+			_rock_field_neighbours(mid, h0, cell_m, cfg, built, taken, pieces)
 
 		if not _rock_field_clear(x, z, 0.05, float(cfg.get("keep_clear_m", 4.0)), built, taken):
 			continue   # nor on or beside anything built, nor inside a rock
@@ -11184,13 +11236,20 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 # What lies near a rocky-ground cell, looked up once for it: into `built` the positions of structures, fires and the players standing there now
 # (nothing is laid on or beside a camp, a station, a fire or a player); into `taken` the cell's own boulders as [x, z, radius], read from the ids
 # this cell was given (a rock across the border in the next cell is not looked at: which cell is laid first changes with where players walk).
-func _rock_field_neighbours(mid: Vector2, h0: float, cell_m: float, cfg: Dictionary, built: Array, taken: Array) -> void:
+func _rock_field_neighbours(mid: Vector2, h0: float, cell_m: float, cfg: Dictionary, built: Array, taken: Array, pieces: Array) -> void:
 	var reach: float = cell_m * 0.75 + float(cfg.get("keep_clear_m", 4.0)) + 3.0 + FIELD_SATELLITE_REACH_M   # a satellite lies up to that far past its cell
+	var talus_reach: float = cell_m * 0.75 + FIELD_SATELLITE_REACH_M + FLOOR_ROWS_REACH_M * FOOT_SKIRT_REACH + 1.0   # and its talus that far past it
 
-	for id in _ids_near(Vector3(mid.x, h0, mid.y), reach):   # the last world sync's grid (every second, after the scatter), so a few cells' ids
+	for id in _ids_near(Vector3(mid.x, h0, mid.y), talus_reach):   # the last world sync's grid (every second, after the scatter), so a few cells' ids
 		var it: Dictionary = _items.get(id, {})
 
-		if it.has("struct") or it.has("fire"):
+		if not (it.has("struct") or it.has("fire")):
+			continue
+
+		if (it.has("fire") or not (it["struct"].has("transient") or _follows_ground(str(it["struct"].get("kind", ""))))):
+			pieces.append(it["pos"])
+
+		if Vector2(float(it["pos"].x) - mid.x, float(it["pos"].z) - mid.y).length() <= reach:
 			built.append(it["pos"])
 
 	for peer in _peer_pos:
@@ -11202,6 +11261,41 @@ func _rock_field_neighbours(mid: Vector2, h0: float, cell_m: float, cfg: Diction
 
 		if it.has("boulder") and (int(it.get("scatter", 0)) & CAVE_KEY) == 0 and absf(float(it["pos"].x) - mid.x) < cell_m * 0.5 and absf(float(it["pos"].z) - mid.y) < cell_m * 0.5:
 			taken.append([float(it["pos"].x), float(it["pos"].z), float((it["boulder"] as Dictionary).get("radius", 0.5))])
+
+
+# A big rock's talus (client-drawn chunks with collision, inventory_view _skirt_mesh) reaches this many of its radii: 14 chunks out to 2.6 radii of up
+# to 0.7, a foot field's 36 out to 4.5 of up to 0.95.
+const SKIRT_REACH := 3.3
+const FOOT_SKIRT_REACH := 5.5
+
+
+# Whether nothing built (a placed piece, a blueprint site, a fire: `pieces`, _rock_field_neighbours) stands within `reach` of a talus's rock at
+# `at`: a talus is not laid under a building.
+func _skirt_clear(at: Vector3, reach: float, pieces: Array) -> bool:
+	for piece in pieces:
+		if Vector2((piece as Vector3).x - at.x, (piece as Vector3).z - at.z).length() < reach + 1.0:
+			return false
+
+	return true
+
+
+# A piece built at `at` (its footprint `half` across from its middle): the talus of every rock that reaches under it is taken off, look and
+# collision, so nobody stands in rock chunks inside a building (the step 1 shortcut, boulders PLAN_big_boulders.md). Laid again, that talus is not
+# laid (_skirt_clear). The rocks themselves stay.
+func _bare_skirts_near(at: Vector3, half: float) -> void:
+	for id in _ids_near(at, half + FLOOR_ROWS_REACH_M * FOOT_SKIRT_REACH):
+		var it: Dictionary = _items.get(id, {})
+
+		if not it.has("boulder") or ((it["boulder"] as Dictionary).get("skirt", []) as Array).size() < 3:
+			continue
+
+		var info: Dictionary = it["boulder"]
+		var reach: float = float(info["radius"]) * (FOOT_SKIRT_REACH if (info["skirt"] as Array).size() >= 4 else SKIRT_REACH)
+
+		if Vector2(float(it["pos"].x) - at.x, float(it["pos"].z) - at.z).length() < reach + half:
+			info.erase("skirt")
+			info["bare"] = 1
+			_dirty = true
 
 
 # Whether a rock of `radius` at (x, z) keeps `keep_m` from everything built and does not overlap a rock in `taken`.
@@ -14952,6 +15046,7 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 
 	_items[_next_id] = entry
 	_grid_add(_next_id, entry)
+	_bare_skirts_near(spot, 0.5 * Vector2(float(def.get("footprint_x", 1.0)), float(def.get("footprint_z", 1.0))).length())
 
 	if _smelters.is_smelter(_structures.get(str(def["kind"]), {})):
 		_smelters.note(_next_id)
