@@ -548,7 +548,7 @@ def main(argv):
     full = "--full" in argv
     force_all = "--all" in argv or full
     wide = "--wide" in argv
-    no_slow = "--no-slow" in argv   # main gate Lane A: the slow lane runs once, on Lane B (TEST_GATES.md "Main gate jobs")
+    no_slow = "--no-slow" in argv   # main gate Lane A: the slow lane runs once, on Lane B (docs/ai-team/MAIN_GATE.md "Main gate jobs")
     argv = [a for a in argv if a not in ("--all", "--full", "--wide", "--no-slow")]
     names = item_ids = None
     if argv and argv[0] == "--paths":

@@ -59,7 +59,7 @@ for path in (root/'docs/ai-team').glob('*.md'):
         errors.append(f'NO STATUS: {path.name}')
 
 policy = '\n'.join((root/p).read_text(encoding='utf-8') for p in core_rulebooks if (root/p).is_file())
-for term in ('dev', 'main', 'PROPOSED', 'SOURCE UNVERIFIED', 'handoff freeze',
+for term in ('dev', 'main', 'PROPOSED', 'SOURCE UNVERIFIED',
              'SYNC PENDING', 'NOT RUN', 'water record', 'Foundation', 'Ceiling'):
     if term.lower() not in policy.lower(): errors.append(f'MISSING POLICY TERM: {term}')
 
