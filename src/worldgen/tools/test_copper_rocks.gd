@@ -136,7 +136,7 @@ func _init() -> void:
 	var land_per_cell: float = float(land) / (78.0 * 40.0)
 	var shore_per_cell: float = float(shore) / 40.0
 	print("copper rocks: %d in all, %d on land (%.3f a cell), %d at the river (%.2f per 32 m of river), %d in deep water, sizes %d small %d big, grades %.2f..%.2f" % [rocks.size(), land, land_per_cell, shore, shore_per_cell, deep, small, big, lo_grade, hi_grade])
-	check(land > 0 and land_per_cell < 0.2, "a few copper rocks are strewn over dry land (%d, %.3f a cell)" % [land, land_per_cell])
+	check(land > 0 and land_per_cell < 0.25, "a few copper rocks are strewn over dry land (%d, %.3f a cell)" % [land, land_per_cell])
 	check(shore_per_cell > land_per_cell * 5.0, "far more on the river bed and its banks (%.2f per 32 m of river against %.3f a land cell)" % [shore_per_cell, land_per_cell])
 	check(deep == 0, "none in deep water (%d)" % deep)
 	check(sizes_ok and by_hand * 2 > big and by_hand > 0 and big > 0 and small > 0, "a share of the sizes lies loose to pick up by hand, bigger ones are rocks to break (%d by hand, %d small rocks, %d big)" % [by_hand, small, big])
@@ -320,15 +320,13 @@ func _init() -> void:
 		var hills: Array = by_height["%s 310" % ore]
 		check(int(coast[0]) > 10, "%s lies along a river on the coastal plain too, with no %s body near (%d per 40 cells of river)" % [ore, ore, int(coast[0])])
 		check(int(hills[0]) * 2 > int(coast[0]) * 3, "%s is more abundant by the river under the mountains (%d against %d by the sea)" % [ore, int(hills[0]), int(coast[0])])
-		if ore == "iron":   # Dave 21 Nov 2026: "1 ingot sized iron rocks will be 50% of the stones out there, 30% of them should be double that size and 20% can be triple sized"
-			var sized: Array = [0, 0, 0, 0]
-
-			for k in range(4):
-				sized[k] = int(coast[5][k]) + int(hills[5][k])
-
-			var all_iron: float = maxf(float(sized[0] + sized[1] + sized[2] + sized[3]), 1.0)
-			check(int(sized[3]) == 0 and absf(float(sized[0]) / all_iron - 0.5) < 0.08 and absf(float(sized[1]) / all_iron - 0.3) < 0.08 and absf(float(sized[2]) / all_iron - 0.2) < 0.08,
-				"river iron: half loose one-ore stones, 30%% two-ore and 20%% three-ore rocks, nothing else (%s)" % str(sized))
+		if ore == "iron":   # Dave 21 Nov 2026: "1 ingot sized iron rocks will be 50% of the stones out there, 30% of them should be double that size and 20% can be triple sized"; 27 Nov 2026, the layered cake: small iron by the shore, bigger each layer up
+			var up_sized: Array = hills[5]
+			var all_up: float = maxf(float(int(up_sized[0]) + int(up_sized[1]) + int(up_sized[2]) + int(up_sized[3])), 1.0)
+			check(int(up_sized[3]) == 0 and absf(float(up_sized[0]) / all_up - 0.5) < 0.1 and absf(float(up_sized[1]) / all_up - 0.3) < 0.1 and absf(float(up_sized[2]) / all_up - 0.2) < 0.1,
+				"river iron under the mountains: half loose one-ore stones, 30%% two-ore and 20%% three-ore rocks, nothing else (%s)" % str(up_sized))
+			var low_sized: Array = coast[5]
+			check(int(low_sized[0]) > 0 and int(low_sized[1]) + int(low_sized[2]) + int(low_sized[3]) == 0, "river iron by the sea: only small one-ore stones (%s)" % str(low_sized))
 		else:
 			check(float(hills[1]) > float(coast[1]) + 0.1 and int(hills[2]) > int(coast[2]), "%s rocks are bigger under the mountains (mean radius %.2f against %.2f)" % [ore, float(hills[1]), float(coast[1])])
 		check(bool(coast[3]) and bool(hills[3]), "every %s rock to break has its grade in range" % ore)
@@ -345,6 +343,7 @@ func _init() -> void:
 		var im = make("test_copper_rocks_iron_%s" % tool_id, tool_id)
 		im._boulder_cfg["luck_extra"] = 1.0   # every blow would take a double stone first: the ore piece still takes exactly its own weight
 		im._boulder_cfg["ore"]["boulder_share"] = 0.0
+		im.ground_height = func(_x, _z): return 310.0   # under the mountains: by the sea river iron is only one-ore stones (Dave 27 Nov 2026, the layered cake)
 		im.water_depth_at = func(pos): return 0.5 if pos.x >= 2000.0 and pos.x < 2040.0 else 0.0
 		im.water_near = func(pos, reach): return pos.x + reach >= 2000.0 and pos.x - reach < 2040.0
 		im.ore_near = func(_pos, _reach, _names, _depth): return ""

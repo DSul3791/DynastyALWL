@@ -10783,7 +10783,7 @@ func _lay_out_ore_rocks_of(cell: Vector2i, cell_m: float, ore: String, reads: Di
 		var river_clue: float = 0.0
 
 		if resource_context != null and ORE_METALS.has(ore):
-			upland = float(resource_context.call("journey_at", x, z))
+			upland = float(resource_context.call("rich_at", x, z))   # the rich layer at the mountain foot (Dave 27 Nov 2026, BugsList 186)
 			area = float(resource_context.call("field_at", int(ORE_METALS[ore]), x, z))
 			river_clue = float(resource_context.call("clue_at", int(ORE_METALS[ore]), x, z))
 
@@ -10853,11 +10853,14 @@ func _lay_out_ore_rocks_of(cell: Vector2i, cell_m: float, ore: String, reads: Di
 		if not is_foot and not sizes.is_empty():
 			var acc: float = 0.0
 			ores_in = int((sizes[sizes.size() - 1] as Array)[1])
+			# Small by the shore, bigger each layer up (Dave 27 Nov 2026, the layered cake): the size draw shrinks toward the sea like the
+			# other ores' (size_coast), so the shore has one-ore stones and the two- and three-ore ones come in going up.
+			var ores_draw: float = size_draw * lerpf(size_coast, 1.0, upland)
 
 			for size_row in sizes:
 				acc += float(size_row[0])
 
-				if size_draw < acc:
+				if ores_draw < acc:
 					ores_in = int(size_row[1])
 					break
 

@@ -51,6 +51,7 @@ var height: PackedFloat32Array = PackedFloat32Array()
 var water: PackedByteArray = PackedByteArray()
 var island: PackedInt32Array = PackedInt32Array()      # 0 sea, else 1.. island number
 var journey: PackedFloat32Array = PackedFloat32Array()
+var rich: PackedFloat32Array = PackedFloat32Array()    # 0..1, how rich the ground is in ore (_journey): highest at the mountain foot and first plateau
 var field: PackedFloat32Array = PackedFloat32Array()   # 3 per cell: iron, copper, tin
 var clue: PackedFloat32Array = PackedFloat32Array()    # 3 per cell
 var coal: PackedFloat32Array = PackedFloat32Array()
@@ -292,6 +293,11 @@ func cell_at(x: float, z: float) -> int:
 # Journey at a point, bilinear between the four cells round it (sea cells count as 0).
 func journey_at(x: float, z: float) -> float:
 	return _bilinear(journey, 1, 0, x, z)
+
+
+# How rich the ground is at a point (0 at the shore, 1 at the mountain foot and on the first plateau, easing off up the mountain), bilinear.
+func rich_at(x: float, z: float) -> float:
+	return _bilinear(rich, 1, 0, x, z)
 
 
 # A metal's field (0 iron, 1 copper, 2 tin) at a point, bilinear.
@@ -562,6 +568,15 @@ func _journey(to_sea: PackedFloat32Array) -> void:
 	var w_hill: float = float(_cfg.get("journey_hill", 0.25))
 	var dmin: float = float(_cfg.get("inland_floor_m", 1500.0))
 	var pmin: float = float(_cfg.get("peak_floor_m", 150.0))
+	# The rich layer (Dave 27 Nov 2026, the layered cake: "we need to make sure that super rich layer is right around the bottom of the mountain
+	# or on the first plateau"): rich rises with the journey to 1 at rich_journey_full, then eases a little (rich_ease_up) above rich_foot_up of the peak
+	# (over rich_band_up), so the mountain stays good but its foot is richest. Ore rocks and sources read it for their chances and sizes.
+	var full_j: float = maxf(float(_cfg.get("rich_journey_full", 0.55)), 0.01)
+	var foot_up: float = float(_cfg.get("rich_foot_up", 0.25))
+	var band: float = maxf(float(_cfg.get("rich_band_up", 0.25)), 0.01)
+	var ease_up: float = float(_cfg.get("rich_ease_up", 0.25))
+	rich = PackedFloat32Array()
+	rich.resize(nx * nz)
 
 	for k in range(nx * nz):
 		var n: int = island[k]
@@ -574,6 +589,7 @@ func _journey(to_sea: PackedFloat32Array) -> void:
 		var up: float = clampf(height[k] / peak, 0.0, 1.0)
 		var under: float = clampf(hill[_div(_div(k, nx), block) * bx + _div(k % nx, block)] / peak, 0.0, 1.0)
 		journey[k] = clampf(w_in * inland + w_h * up + w_hill * under, 0.0, 1.0)
+		rich[k] = _smooth(0.0, full_j, journey[k]) * (1.0 - ease_up * _smooth(foot_up, foot_up + band, up))
 
 
 # The paint: per metal, score = journey + noise_amp x (warped noise - 0.5); the island's land is covered where the score passes its
@@ -897,12 +913,12 @@ func _deposits(spawn: Vector3) -> void:
 				if f <= 0.02:
 					continue
 
-				var p: float = float(bases.get(METALS[m], 0.0)) * f * (1.0 - farther + farther * journey[k])
+				var p: float = float(bases.get(METALS[m], 0.0)) * f * (1.0 - farther + farther * rich[k])
 
 				if unit(_seed ^ 0x5eed, gx, gz, m * 8 + 3) >= p:
 					continue
 
-				var size: float = clampf(journey[k] * 0.7 + 0.3 * unit(_seed ^ 0x5eed, gx, gz, m * 8 + 4), 0.0, 1.0)
+				var size: float = clampf(rich[k] * 0.7 + 0.3 * unit(_seed ^ 0x5eed, gx, gz, m * 8 + 4), 0.0, 1.0)
 				_add_deposit(m, x, z, size, lerpf(r_min, r_max, size), _hash(_hash(gx, gz), m), false)
 
 	_assure(spawn)
