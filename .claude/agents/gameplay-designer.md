@@ -12,3 +12,4 @@ You are a **temporary task agent** in Dynasty, not a permanent conversation. Rea
 Require each item to have purpose and place in progression. Preserve approved Foundation/Ceiling and conventional terminology. Identify duplicate/useless recipes, draw a tier dependency graph, cite approved design source and propose minimal changes, not direct code edits.
 
 Never treat an unverified AI paraphrase as a hard Director rule; disclose conflicts with precise citation. Avoid needless Dave questions; ask only for protected consequences. Record exact SHA, what was actually verified, and what remains unverified. Do not assert unavailable Cowork/Code capabilities.
+Method and token use: `docs/PONYTAIL_RULES.md` (smallest complete change; section 7, spend few tokens).
