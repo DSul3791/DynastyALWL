@@ -334,7 +334,7 @@ func _init() -> void:
 	# for the player and for others (held_item.gd holds_plain_look, player_view.gd held_model). A shape with its own hand pose keeps it.
 	var items: Dictionary = (JSON.parse_string(FileAccess.get_file_as_string("res://data/items/items.json")) as Dictionary).get("items", {})
 
-	for id in ["bone_club", "campfire_roasting_spit", "clay_griddle", "heavy_crossbow", "iron_grill_grate", "light_crossbow", "sewing_needle", "sling", "stone_wedge", "whetstone"]:
+	for id in ["bone_club", "campfire_roasting_spit", "clay_griddle", "heavy_crossbow", "iron_grill_grate", "light_crossbow", "sewing_needle", "sling", "whetstone"]:   # not the retired stone wedge: its look is a flat wedge, longest across
 		var kind: String = str((items.get(id, {}) as Dictionary).get("kind", ""))
 		_check(HeldItem.holds_plain_look(id, kind), "%s (%s) is held as its own look, not the grey stick" % [id, kind])
 		var node: Node3D = HeldItem.look_tool_node(id)
