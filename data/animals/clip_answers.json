@@ -1,7 +1,7 @@
 {
 	"about": "Each animal model's clip height shares and skin answers, measured by tools/clip_answers.gd. absent: kind|scene drawn with the code-built body (no file or no mesh here).",
 	"absent": [
-		"alligator|res://assets/animals/alligator/SK_AmericanAligator.fbx"
+		"alligator|res://assets/animals/alligator/Alligator_Al.glb"
 	],
 	"models": {
 		"bear|res://assets/animals/bear/SK_Bear.fbx": {
