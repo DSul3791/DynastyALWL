@@ -29,9 +29,17 @@ const SPACING_M := 8.0
 const HALF := 8                         # squares each way: 8 x 8 m = 64 m reach
 const MAX_SOURCES := 4
 const MAX_DEPTH_M := 12.0
-const SPEED_REF := 0.5                  # m/s with no loudness change (the current simulated rivers run 0.1 to 1 m/s)
+const SPEED_REF := 0.5                  # m/s with no pitch change (the current simulated rivers run 0.1 to 1 m/s)
 const SPEED_FLOOR := 0.15
-const SPEED_DB_PER_OCTAVE := 5.0        # per doubling of the current speed
+const SPEED_DB_PER_OCTAVE := 5.0        # per doubling of the current speed over LOUD_MPS
+# Dave 26 Nov 2026: "any moving water sounds like a windstorm"; "slow water should have no ripple sounds other than fish
+# jumping or splashing". Water slower than SILENT_MPS makes no sound (the fish splashes are ambient_life.gd's); from
+# there the level rises SLOW_DB over the octaves up to LOUD_MPS, and only faster water gets the old +3 dB at most.
+# A steep reach (a drop of RAPIDS_DROP_M or more to a neighbour) is fast water whatever the drawn current says.
+const SILENT_MPS := 0.4
+const LOUD_MPS := 1.0
+const SLOW_DB := 18.0
+const RAPIDS_DROP_M := 0.5
 const ROWS_PER_FRAME := 2               # of the 17 scan rows
 const SEPARATION_M := 36.0
 const FALL_MERGE_M := 100.0              # falls farther than this and within FALL_CLUSTER_M of each other share one voice
@@ -77,7 +85,7 @@ const FALL_FLOW_SILENT := 0.05          # under this flow a fall makes no sound 
 
 const KINDS := {
 	"brook": {"file": "water_brook", "db": -25.0, "reach": 30.0},   # Dave 2026-10-20: -10 sounded like loud constant wind; his recording (EQ'd, -24 dB RMS) now sits near the other ambience
-	"river": {"file": "water_river", "db": -25.0, "reach": 35.0},
+	"river": {"file": "water_brook", "db": -25.0, "reach": 35.0},   # Dave 26 Nov 2026: the generated water_river noise "sounds like a windstorm"; the real brook recording, lower with width
 	"pond": {"file": "water_pond", "db": -17.0, "reach": 35.0},
 	"fall": {"file": "water_fall", "db": -22.0, "reach": 110.0},
 }
@@ -381,6 +389,22 @@ static func kind_for(around: int, flow_mps: float) -> String:
 	return "brook"
 
 
+# Whether a brook or river square is fast enough to be heard: a current of SILENT_MPS or more, or a steep reach.
+static func flowing(speed_mps: float, drop_m: float) -> bool:
+	return speed_mps >= SILENT_MPS or drop_m >= RAPIDS_DROP_M
+
+
+# The level the current gives a heard brook or river: -SLOW_DB at SILENT_MPS rising to 0 at LOUD_MPS, then
+# SPEED_DB_PER_OCTAVE per doubling up to +3 dB. An unknown current (-1, heard only because the reach is steep) counts as LOUD_MPS.
+static func speed_db(speed_mps: float) -> float:
+	var s: float = speed_mps if speed_mps >= 0.0 else LOUD_MPS
+
+	if s < LOUD_MPS:
+		return -SLOW_DB * (1.0 - clampf(log(maxf(s, SILENT_MPS) / SILENT_MPS) / log(LOUD_MPS / SILENT_MPS), 0.0, 1.0))
+
+	return clampf(SPEED_DB_PER_OCTAVE * log(s / LOUD_MPS) / log(2.0), 0.0, 3.0)
+
+
 # Flowing water near a lake stays quiet while the player is at the lake (a spring or an outlet next to a pond is not
 # the sound of the pond). `lakes` and `flowing` are candidate squares; returns the flowing ones that may play.
 func quiet_near_lakes(lakes: Array, flowing: Array, origin: Vector3) -> Array:
@@ -458,6 +482,9 @@ func _classify_row(j: int) -> void:
 
 		var at: Vector3 = Vector3(cx + float(i - HALF) * SPACING_M, here, cz + float(j - HALF) * SPACING_M)
 		var distance: float = Vector2(at.x - origin.x, at.z - origin.z).length()
+
+		if kind in ["brook", "river"] and not flowing(flow_mps, drop):
+			continue                                   # slow water is silent (and hides nothing behind a water bed)
 
 		if distance <= float(KINDS[kind]["reach"]):
 			_candidates.append({"kind": kind, "at": at, "distance": distance, "drop": drop, "speed": _speed[j * count + i], "around": around, "score": distance / float(KINDS[kind]["reach"])})
@@ -745,12 +772,11 @@ func _aim(slot: Dictionary, candidate: Dictionary, _from: Vector3) -> void:
 
 	var speed: float = float(candidate.get("speed", -1.0))
 
-	if speed >= 0.0 and candidate["kind"] in ["brook", "river"]:
-		var octaves: float = log(maxf(speed, SPEED_FLOOR) / SPEED_REF) / log(2.0)
-		# Owner 2026-10-20: rivers sounded like ocean surf. Only fast water gets louder (up to +3 dB, and
-		# only rapids add the slope boost below); calm reaches get quieter and keep their pitch.
-		db += clampf(SPEED_DB_PER_OCTAVE * octaves, -6.0, 3.0)
-		pitch += 0.04 * clampf(octaves, -1.5, 2.0)
+	if candidate["kind"] in ["brook", "river"]:
+		db += speed_db(speed)                     # slow water is quiet, only fast water is loud (and silent under SILENT_MPS: _classify_row)
+
+		if speed >= 0.0:
+			pitch += 0.04 * clampf(log(maxf(speed, SPEED_FLOOR) / SPEED_REF) / log(2.0), -1.5, 2.0)
 
 	var depth: float = float(candidate.get("depth", -1.0))
 
