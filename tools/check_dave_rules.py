@@ -257,6 +257,15 @@ def campfire_both():
     check("R-CRAFT-MAKING", "kit" not in items["campfire_kit"]["name"].lower(), "the Campfire's name never says kit")
 
 
+def iron_look():
+    """R-ITEM-IRON-LOOK: worn iron and mail are matt drab grey (little metallic, rough); steel stays shiny metal."""
+    src = (ROOT / "src/client/worn_look.gd").read_text(encoding="utf-8")
+    looks = {k: [float(x) for x in v.split(",")] for k, v in re.findall(r'"(\w+)": \[([0-9., ]+)\]', src)}
+    check("R-ITEM-IRON-LOOK", '["iron", "iron"]' in src and '["mail", "iron"]' in src and '["steel", "metal"]' in src, "worn iron and mail use the iron look, steel the metal look")
+    check("R-ITEM-IRON-LOOK", looks["iron"][2] >= 0.6 and looks["iron"][4] <= 0.4, f"the iron look is matt (roughness {looks['iron'][2]}, metallic {looks['iron'][4]})")
+    check("R-ITEM-IRON-LOOK", looks["metal"][4] >= 0.6, f"steel's look is shiny metal (metallic {looks['metal'][4]})")
+
+
 def lane_on_c():
     """R-TEAM-LANE-C-DRIVE: test tools default to C:\\DynastyLane and its own Godot, never to E: or the shared editor in GodotInstaller
     (Dave 26 Nov 2026: "only test from there"). Scans tools/ (top level) and art/playthrough/ (.sh .ps1 .py .gd .cmd, no extension).
@@ -283,7 +292,7 @@ def main():
     steps = {"R-ANIMAL-BEAR": lambda: bears(player_run_mps()), "R-HUD-STATUS": status_strip, "R-HUNT-TRAILS-MAP": tracking, "R-ITEM-WEIGHTS": seeds,
              "R-STORE": names_and_storage, "R-CORE-NEWER-WINS": godot_guards, "R-HUD-PROMPTS": e_prompts,
              "R-FLORA-WITNESS-GLOW": witness_glow, "R-PLAYER-CRAWL": stealth, "R-HUNT-DEAD-NAME": dead_names, "R-HUNT-SIGN-SOUND": sign_sound, "R-CORE-PASS-OUT": pass_out,
-             "R-ANIMAL-SEEN-FAR": seen_far, "R-MOVE-RUN-FEET": run_feet, "R-CRAFT-MAKING": campfire_both, "R-TEAM-LANE-C-DRIVE": lane_on_c}
+             "R-ANIMAL-SEEN-FAR": seen_far, "R-MOVE-RUN-FEET": run_feet, "R-CRAFT-MAKING": campfire_both, "R-TEAM-LANE-C-DRIVE": lane_on_c, "R-ITEM-IRON-LOOK": iron_look}
     for key, step in steps.items():
         try:
             step()
