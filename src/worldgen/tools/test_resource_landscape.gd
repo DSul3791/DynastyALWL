@@ -79,6 +79,14 @@ func _init() -> void:
 	var heart_j: float = float(context.call("journey_at", CENTRE.x, CENTRE.y))
 	var mid_j: float = float(context.call("journey_at", CENTRE.x + RADIUS * 0.5, CENTRE.y))
 	check(shore_j < 0.2 and heart_j > 0.8 and mid_j > shore_j and mid_j < heart_j, "journey runs from the shore (%.2f) through the middle (%.2f) to the heart (%.2f)" % [shore_j, mid_j, heart_j])
+	# The rich layer (Dave 27 Nov 2026, the layered cake, BugsList 186): richest at the mountain's foot, less on the mountain, least by the shore;
+	# iron's area reaches the shore.
+	var shore_r: float = float(context.call("rich_at", spawn.x, spawn.z))
+	var heart_r: float = float(context.call("rich_at", CENTRE.x, CENTRE.y))
+	var mid_r: float = float(context.call("rich_at", CENTRE.x + RADIUS * 0.5, CENTRE.y))
+	check(mid_r > heart_r + 0.05 and mid_r > shore_r + 0.3 and heart_r > 0.6, "the richest ground is at the mountain's foot (%.2f), then the mountain (%.2f, still good), least by the shore (%.2f)" % [mid_r, heart_r, shore_r])
+	var shore_iron: float = float(context.call("field_at", 0, CENTRE.x + RADIUS * 0.9, CENTRE.y))
+	check(shore_iron >= 0.45, "iron's area reaches the shore (%.2f near it)" % shore_iron)
 
 	# 2. The paint: shares of the land, nested without being rings, earlier metals inside later ones.
 	var land: int = 0

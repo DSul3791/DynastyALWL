@@ -32,6 +32,8 @@ GODOT = {   # rulings checked by behaviour, not data: the test that guards each
     "R-JOIN-PASSWORD-ONCE": ["test_server_auth"],
     "R-SOUND-MENU-MUSIC": ["test_title_music"],
     "R-MOVE-RUN-FEET": ["test_run_speed"],
+    "R-RES-BOULDER-PHYSICS": ["test_boulder_fall", "test_rock_fields"],
+    "R-RES-BOULDER-HARM": ["test_boulder_fall"],
 }
 
 results = []   # (key, ok, what)
@@ -268,6 +270,13 @@ def iron_look():
     check("R-ITEM-IRON-LOOK", looks["metal"][4] >= 0.6, f"steel's look is shiny metal (metallic {looks['metal'][4]})")
 
 
+def rocks_at_rest():
+    """R-RES-BOULDER-PHYSICS: rocks are laid where they have long since settled, so no loose rock lies on ground steeper than loose rock
+    rests on (about 35 degrees, rise 0.7 a metre); steeper ground takes only crags (bedrock)."""
+    fields = data("data/items/boulders.json")["rock_fields"]
+    check("R-RES-BOULDER-PHYSICS", float(fields["steepest"]) <= 0.71 and float(fields["scree_flat_max"]) <= 0.71, f"loose rock only on ground of rise 0.7 or less (steepest {fields['steepest']}, scree_flat_max {fields['scree_flat_max']})")
+
+
 def lane_on_c():
     """R-TEAM-LANE-C-DRIVE: test tools default to C:\\DynastyLane and its own Godot, never to E: or the shared editor in GodotInstaller
     (Dave 26 Nov 2026: "only test from there"). Scans tools/ (top level) and art/playthrough/ (.sh .ps1 .py .gd .cmd, no extension).
@@ -294,7 +303,8 @@ def main():
     steps = {"R-ANIMAL-BEAR": lambda: bears(player_run_mps()), "R-HUD-STATUS": status_strip, "R-HUNT-TRAILS-MAP": tracking, "R-ITEM-WEIGHTS": seeds,
              "R-STORE": names_and_storage, "R-CORE-NEWER-WINS": godot_guards, "R-HUD-PROMPTS": e_prompts,
              "R-FLORA-WITNESS-GLOW": witness_glow, "R-PLAYER-CRAWL": stealth, "R-HUNT-DEAD-NAME": dead_names, "R-HUNT-SIGN-SOUND": sign_sound, "R-CORE-PASS-OUT": pass_out,
-             "R-ANIMAL-SEEN-FAR": seen_far, "R-MOVE-RUN-FEET": run_feet, "R-CRAFT-MAKING": campfire_both, "R-TEAM-LANE-C-DRIVE": lane_on_c, "R-ITEM-IRON-LOOK": iron_look}
+             "R-ANIMAL-SEEN-FAR": seen_far, "R-MOVE-RUN-FEET": run_feet, "R-CRAFT-MAKING": campfire_both, "R-TEAM-LANE-C-DRIVE": lane_on_c, "R-ITEM-IRON-LOOK": iron_look,
+             "R-RES-BOULDER-PHYSICS": rocks_at_rest}
     for key, step in steps.items():
         try:
             step()

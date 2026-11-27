@@ -989,6 +989,9 @@ func _ready() -> void:
 	items.nests_near = func(point, reach): return animals.nests_near(point, reach)
 	items.animals_near = func(point, radius): return animals.list_near(point, radius)
 	items.animal_snare = func(id): return animals.snare(id)
+	items.crush_animal = func(id: int, share: float) -> void:   # a falling boulder (server_items _boulder_fell): share 1 kills
+		if animals.animals.has(id):
+			animals.damage(id, maxf(float(animals.animals[id]["hp"]) * share, 0.01), -1, "boulder")
 	animals.snare_pass = func(id, sp, from, to): items.animal_passed(id, sp, from, to)
 	items.trail_strength = func(x, z): return trails.strength_at(x, z)
 	items.run_distance = func(x, z, kind): return ranges.route_distance(x, z, kind)
