@@ -239,6 +239,7 @@ var strain_fade: float = 0.0
 var passing_out: bool = false                # the server's strain stance bit 16: past the faint threshold, falling (body_out)
 var stance_confirmed: int = 0                # the server's answer: 0 stand, 1 crouch, 2 sit, 3 lie (fainting forces 3)
 var notice_event: Callable = Callable()      # (text) every notice line, for the sounds that follow a server line (the shore net)
+var hint_card = null                         # terrain_client's hint card (hint_card.gd): a guide hint goes on it, not on the passing line
 var stance_event: Callable = Callable()      # (stance) when the server confirms or changes it
 var lie_on_bed: Callable = Callable()        # (bed position, yaw degrees, structures.json row) after E on a bed: the client lays the player along it
 var on_bed: Callable = Callable()            # () -> true while the player lies on a bed (E then gets them up)
@@ -2036,6 +2037,9 @@ func has_tool_class(tool_class: String) -> bool:
 func _on_notice(text: String) -> void:
 	if notice_event.is_valid():
 		notice_event.call(text)
+
+	if hint_card != null and hint_card.offer(text):
+		return   # it waits for its OK box (R-HUD-HINT-BOX)
 
 	_prompt.text = KeyBindings.localize(text)
 	_prompt.move_to_front()   # over the inventory window, which is built later on the same layer: a refusal while crafting was hidden under it (Dave 23 Nov 2026)
