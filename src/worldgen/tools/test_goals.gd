@@ -608,7 +608,7 @@ func _init() -> void:
 	w._goal_state_of(1)["goals_done"]["drink"] = true
 	var lists_before: int = lists_sent.size()
 	w.report_position(1, Vector3(600.0, 10.0, 600.0))
-	check(lists_sent.size() == lists_before and not str(w.goals_rows(1)[0][2]).contains("fresh water"), "once drunk the hint is the plain one and is not sent again")
+	check(lists_sent.size() == lists_before and str(w.goals_rows(1)[0][2]) == str(w._goals_data()[0]["hint"]), "once drunk the hint is the plain one and is not sent again")
 
 	# The search itself on a small made-up tile (8 m samples): a one-sample-wide river 100 m away is found; marsh, sea and a seasonal pond
 	# nearer are not drinking water for the hint; nothing in reach is INF; a tile with no water map is INF.
