@@ -395,6 +395,21 @@ func _check(ok: bool, what: String) -> void:
 
 
 # Every worn piece's world position, by the old bone it was written for.
+# The rigid chest tubes hung on the chest (the long cylinders, not the collar rings).
+func _chest_tubes(s: Skeleton3D) -> int:
+	var chest: Node3D = s.get_node_or_null("Worn_chest/Frame") as Node3D
+	var n: int = 0
+
+	if chest == null:
+		return 0
+
+	for node in chest.get_children():
+		if node is MeshInstance3D and (node as MeshInstance3D).mesh == WornLook._mesh("cyl") and (node as MeshInstance3D).transform.basis.get_scale().y > 0.3:
+			n += 1
+
+	return n
+
+
 func _pieces(skeleton: Skeleton3D) -> Dictionary:
 	var out: Dictionary = {}
 
@@ -550,7 +565,8 @@ func _init() -> void:
 		# At idle the garment's own shape shows over his shoulder blades, not the layer under it (the blades stood out through it before the chest pieces were fitted to
 		# Dave's body, worn_shell.gd CHEST_TURN; offline: 245 gambeson and 308 shirt of about 3600 torso points, fitted 40 and 75). The tops of the shoulders above the
 		# chest tube are the layer's: the garment's own shoulders.
-		if str(garment[1]) != "mailshirt":
+		# The gambeson's layer is its chest on his body (worn_shell.gd LAYER_IS_CHEST), so only the shirt is counted.
+		if str(garment[1]) == "tunic":
 			var showing: Array = _showing(body.body_mesh, shell, s)
 			_check(int(showing[1]) > 2000 and int(showing[2]) * 100 <= int(showing[1]) * 3,
 				"%s at idle: the layer shows over the shoulder blades at %d of %d torso points (at most 3%%; outside the pieces anywhere %d)" % [str(garment[0]), int(showing[2]), int(showing[1]), int(showing[0])])
@@ -561,7 +577,7 @@ func _init() -> void:
 			"%s at idle stands off the body at most %.3f m at the back and %.3f m at the sides (at most 0.085)" % [str(garment[0]), float(standoff[0]), float(standoff[1])])
 
 		var details: Array = _quilting(s)
-		var want: int = {"padded": 5, "tunic": 1}.get(str(garment[1]), 0)
+		var want: int = {"tunic": 1}.get(str(garment[1]), 0)      # the gambeson's quilting is in its cloth (worn_look.gd "quilted")
 		_check(int(details[0]) == want and int(details[1]) == want, "%s's %d flat chest details (of %d) lie on its chest: %d" % [str(garment[0]), int(details[0]), want, int(details[1])])
 
 		# Each garment's layer stops at the neck (a 9 cm band up the gambeson's neck read as a neck brace and left the throat bare with the arm raised, Lane A qa15g).
@@ -620,6 +636,17 @@ func _init() -> void:
 	WornLook.attach(body, ["gambeson"], true)
 	await process_frame
 	_check(_shells(s).is_empty(), "a far body hangs no fitted layer")
+	_check(_chest_tubes(s) == 1, "a far gambeson keeps its chest tube (%d)" % _chest_tubes(s))
+	# The gambeson's own shape (Dave, 28 Nov 2026; BugsList 158: its chest tube read as a squared block from the side): near, on Dave's body, its fitted layer is its chest
+	# and no rigid chest tube is hung; a shirt worn under it hangs no chest pieces through it, and the mail shirt over it keeps its own.
+	WornLook.attach(body, ["linen_shirt", "gambeson", "mail_shirt"], false)
+	await process_frame
+	_check(_chest_tubes(s) == 1 and _shells(s).has("padded") and _shells(s).has("tunic") and _shells(s).has("mailshirt"),
+		"shirt, gambeson and mail on Dave's body: one chest tube (the mail's: %d) and all three layers (%s)" % [_chest_tubes(s), str(_shells(s).keys())])
+	_check(float(WornShell.OUT_M["tunic"]) < float(WornShell.OUT_M["padded"]) and float(WornShell.OUT_M["padded"]) < float(WornShell.OUT_M["mailshirt"]), "the shirt under the gambeson under the mail")
+	WornLook.attach(body, ["gambeson"], false)
+	await process_frame
+	_check(_chest_tubes(s) == 0, "a near gambeson on Dave's body hangs no chest tube (%d)" % _chest_tubes(s))
 	var old_body: Node3D = Ragdoll.new()
 	root.add_child(old_body)
 	WornLook.attach(old_body, ["gambeson"], false)

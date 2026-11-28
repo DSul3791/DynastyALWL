@@ -35,7 +35,13 @@ const CHEST_DEEPER := 1.2
 const CHEST_BACK_M := 0.01
 const CHEST_NARROWER := 0.9
 # How far out from the skin, in metres: inside the garment's pieces (a layer-2 garment's pieces stand 3 cm out), and a shirt under a gambeson under mail in that order.
-const OUT_M := {"tunic": 0.01, "padded": 0.018, "mailshirt": 0.024}
+# The gambeson's layer stands 3 cm out, as thick as its padding, and the mail shirt's goes over it.
+const OUT_M := {"tunic": 0.01, "padded": 0.03, "mailshirt": 0.036}
+# Garments whose fitted layer is their chest on a near body: the rigid chest tube is left off (Dave, 28 Nov 2026, the gambeson's own shape: the tube read as a squared
+# block from the side, BugsList 158), so the padded jacket follows the body in every pose. Far bodies hang no layer and keep the tube.
+const LAYER_IS_CHEST := ["padded"]
+# Garments worn under one of those (a shirt under the gambeson): their chest pieces would stand out through its layer, so they are left off; their own layer stays under it.
+const UNDER_CHEST := ["tunic"]
 
 static var _cache: Dictionary = {}      # "<mesh id>|<builder>" -> ArrayMesh (or null: a mesh that is not one skinned body)
 static var _keep: Array = []            # the source meshes, so a cached id is never reused by a new mesh
@@ -50,14 +56,17 @@ static func covers(builder: String) -> bool:
 
 # `builder`'s pieces (worn_look.gd parts_of) as they hang on a body with this layer (see CHEST_TURN). Other garments' pieces, and pieces on other bones, are returned as
 # they are.
-static func fit_parts(builder: String, parts: Array) -> Array:
+static func fit_parts(builder: String, parts: Array, near: bool = true) -> Array:
 	if not covers(builder):
 		return parts
+
+	if near and builder in LAYER_IS_CHEST:
+		return parts.filter(func(part: Dictionary) -> bool: return not _is_tube(part))
 
 	var tube: Dictionary = {}
 
 	for part in parts:
-		if str(part["bone"]) == "chest" and str(part["shape"]) == "cyl" and not bool(part.get("detail", false)):
+		if _is_tube(part):
 			tube = part
 			break
 
@@ -86,6 +95,10 @@ static func fit_parts(builder: String, parts: Array) -> Array:
 		out.append(piece)
 
 	return out
+
+
+static func _is_tube(part: Dictionary) -> bool:
+	return str(part["bone"]) == "chest" and str(part["shape"]) == "cyl" and not bool(part.get("detail", false))
 
 
 # A flat chest detail laid on the turned tube's front (front is -Z): on the flat face across the chest, or turned onto the slanted face beside it, its back sunk 2 mm in,
