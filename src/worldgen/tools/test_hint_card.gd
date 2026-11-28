@@ -29,7 +29,13 @@ func _initialize() -> void:
 	var card = Card.new()
 	card.mouse_free = false
 	root.add_child(card)
-	var drink: String = "Stand at the edge of a river or lake and press E to drink. Sea water is too salty."
+	var drink: String = ""
+
+	for hint in (JSON.parse_string(FileAccess.get_file_as_string(Card.HINTS_PATH)) as Dictionary).get("hints", []):
+		if str(hint.get("id", "")) == "drink":
+			drink = str(hint["text"])   # its words change with the wording passes: read, not copied
+
+	check(drink != "", "the drink hint is in hints.json")
 	var hotbar: String = "Drag the axe to the hotbar, then press its number key."
 	var copper: String = "Goal done: Smelt copper. You earn 10 copper. Next: Find tin ore. This is a journey."
 	check(card.wanted(drink) and card.wanted(hotbar), "a goal hint and a box-marked hint are the card's")
