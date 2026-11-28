@@ -1,15 +1,17 @@
 extends CanvasLayer
 
 # The hint card (Dave 28 Nov 2026, R-HUD-HINT-BOX: "if you want a real hint to come up on the screen, and if it's at the right time, it should
-# come up in a box where you have to click OK"). A guide hint (data/items/hints.json: one with a `goal` or `box` true) and a "Goal done ... Next:"
+# come up in a box where you have to click OK"). A guide hint (data/items/hints.json: one with a `goal`, or one of BOX_IDS) and a "Goal done ... Next:"
 # line come up here instead of the passing line under the crosshair, and stay until OK is clicked or Enter is pressed. The game never pauses
 # (multiplayer): a card waits in the queue until the player is safe (terrain_client _hint_safe: no screen or menu up, no animal attacking near,
 # not hurt lately, not swimming or fainting, no mouse button held), and a card up when danger comes is put back and the mouse handed back at once.
-# One card at a time, each line once per run (the server says each hint once per character). Low on the screen like the welcome card.
+# One card at a time, each line once per run: the server says a hint once per character, and the once-more it says for a goal still open after
+# 5 minutes (server_items.gd _hints_check) is not shown again. Low on the screen like the welcome card.
 
 const KeyBindings := preload("res://src/client/key_bindings.gd")
 const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
 const HINTS_PATH := "res://data/items/hints.json"
+const BOX_IDS := ["hotbar", "kit", "place_fire", "roof_panel"]   # steps of the guide with no goal of their own: using the axe, the campfire, the roof
 const WIDTH_PX := 620.0
 const PAD_PX := 20.0
 const BOTTOM_GAP_PX := 210.0   # above the hotbar, as the welcome card
@@ -32,7 +34,7 @@ func _init(hints_path: String = HINTS_PATH) -> void:
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(hints_path))
 
 	for hint in (parsed.get("hints", []) if typeof(parsed) == TYPE_DICTIONARY else []):
-		if str(hint.get("goal", "")) != "" or bool(hint.get("box", false)):
+		if str(hint.get("goal", "")) != "" or BOX_IDS.has(str(hint.get("id", ""))):
 			_box_texts[str(hint.get("text", ""))] = true
 
 

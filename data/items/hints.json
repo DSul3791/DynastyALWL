@@ -1,5 +1,5 @@
 {
-	"_about": "In-game hint lines (Sal, 2026-10-31), final wording for the UI: one short friendly line per tutorial step, 12 words or fewer, each checked against what the game really does (source: TUTORIAL_FIRST_30_MIN.md and starter_goals.json). `trigger` names the moment to show it (the guide's step triggers); `goal` links a starter goal where one exists. Keys the HUD needs: id, trigger, text. A hint with a `goal` or `box` true comes up in the OK box (src/client/hint_card.gd, Dave 28 Nov 2026), the rest as a passing line.",
+	"_about": "In-game hint lines (Sal, 2026-10-31), final wording for the UI: one short friendly line per tutorial step, 12 words or fewer, each checked against what the game really does (source: TUTORIAL_FIRST_30_MIN.md and starter_goals.json). `trigger` names the moment to show it (the guide's step triggers); `goal` links a starter goal where one exists. Read by nothing yet. Keys the HUD needs: id, trigger, text.",
 	"hints": [
 		{
 			"id": "move",
@@ -43,8 +43,7 @@
 		{
 			"id": "hotbar",
 			"trigger": "axe_made",
-			"text": "Drag the axe to the hotbar, then press its number key.",
-			"box": true
+			"text": "Drag the axe to the hotbar, then press its number key."
 		},
 		{
 			"id": "fell",
@@ -66,14 +65,12 @@
 		{
 			"id": "kit",
 			"trigger": "6_sticks_16_stones",
-			"text": "Craft a Campfire: 6 sticks and 16 stones.",
-			"box": true
+			"text": "Craft a Campfire: 6 sticks and 16 stones."
 		},
 		{
 			"id": "place_fire",
 			"trigger": "kit_made",
-			"text": "Hold the Campfire and click the ground. Under trees it survives rain.",
-			"box": true
+			"text": "Hold the Campfire and click the ground. Under trees it survives rain."
 		},
 		{
 			"id": "light",
@@ -124,8 +121,7 @@
 		{
 			"id": "roof_panel",
 			"trigger": "wall_placed",
-			"text": "Hammer (press R): Crude - Roof 45 or 65. A roof panel rests on a wall top, a ceiling edge or another panel's end: aim at one and face across it. The mouse wheel flips it to rise or fall.",
-			"box": true
+			"text": "Hammer (press R): Crude - Roof 45 or 65. A roof panel rests on a wall top, a ceiling edge or another panel's end: aim at one and face across it. The mouse wheel flips it to rise or fall."
 		},
 		{
 			"id": "spear",
@@ -209,8 +205,7 @@
 		{
 			"id": "place_fire",
 			"trigger": "has_campfire_kit",
-			"text": "Hold the Campfire and click the ground. Under trees it survives rain.",
-			"box": true
+			"text": "Hold the Campfire and click the ground. Under trees it survives rain."
 		},
 		{
 			"id": "cave_in",

@@ -1,7 +1,7 @@
 extends SceneTree
 
 # The hint card (R-HUD-HINT-BOX, Dave 28 Nov 2026): a guide hint or a "Goal done ... Next:" line waits for safety, shows until OK or Enter, steps
-# aside when danger comes, and each line shows once; passing lines are not the card's.
+# aside when danger comes, and each line shows once (the server's 5-minute once-more too); passing lines are not the card's.
 #   godot --headless --path . --script res://src/worldgen/tools/test_hint_card.gd      Prints "Test done: N pass, N fail".
 
 const Card := preload("res://src/client/hint_card.gd")
@@ -37,7 +37,7 @@ func _initialize() -> void:
 	check(not card.wanted("Walk with W A S D. Hold Shift to run.") and not card.wanted("F again to put the log down") and not card.wanted("Goal done: Smelt copper."),
 		"a passing hint, a refusal and a goal done with nothing next stay passing lines")
 	check(not card.offer("Too many trunks lie here."), "offer refuses a line that is not the card's (the caller shows it)")
-	check(card.offer(drink) and card.offer(drink) and card.queue.size() == 1, "each line is queued once")
+	check(card.offer(drink) and card.offer(drink) and card.queue.size() == 1, "each line is queued once (the server's once-more is not a second card)")
 	card.offer(copper)
 	card.tick(false, 10000)
 	check(card.showing == "" and card.queue.size() == 2, "not safe: nothing shows")

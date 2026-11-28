@@ -19,7 +19,7 @@ Each row: `id`, `trigger` (free text naming a moment), `text`, optional `goal` (
 | leanto_made, leanto_placed, bed_placed | made `lean_to_kit`; `placed` lean_to; `placed` rough_bed |
 | workbench_placed, spear_made | `placed` workbench; made spear |
 | warmth_under_70, dusk | Warmth under 70; hour 18 to 20 |
-3. **Once:** each hint is said once; a guide hint comes up in a box the player clicks OK on (R-HUD-HINT-BOX, `docs/RULINGS.md`).
+3. **Repeat:** if a hint's goal is still open 5 minutes after it was shown, show it once more (Dave's answer pending; default yes, once).
 4. **Test:** extend test_goals: a hint is sent once when its trigger holds, not twice; saved in characters.json.
 
 ## 2. Camp-goal events (data/items/camp_goals.json; `needs_code` true)

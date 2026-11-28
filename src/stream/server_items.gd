@@ -26448,7 +26448,8 @@ func dev_place(spec: String) -> int:
 # --- Hints (data/items/hints.json by Sal, HINTS_AND_CAMP_EVENTS_SPEC.md; Tyler 31 Oct 2026) ---
 # A hint is a one-line notice (the same line as the goal notices) said once per character and hint id when its trigger becomes true; the ids said are saved in
 # characters.json "hints_seen". Triggers by name (below); a trigger the server cannot judge (beach_with_container) never fires.
-# Said once, never again: the client puts a guide hint in a box the player clicks OK on (R-HUD-HINT-BOX), so it is not missed.
+# A hint whose goal is still open HINT_REPEAT_S (5 minutes) after it was said is said once more.
+const HINT_REPEAT_S := 300.0
 var _hints: Array = []
 var _hints_loaded: bool = false
 var _hint_origin: Dictionary = {}     # peer -> first position seen (the "moved" trigger)
@@ -26684,7 +26685,7 @@ func _struct_kind_within(pos: Vector3, kind: String, r: float) -> bool:
 	return false
 
 
-# Looks at every hint for one player: says the first one whose trigger holds and that was not said yet.
+# Looks at every hint for one player: says the ones whose trigger holds and that were not said yet (or whose goal is still open 5 minutes after).
 func _hints_check(peer: int) -> void:
 	var st: Dictionary = _goal_state_of(peer)
 
@@ -26701,12 +26702,20 @@ func _hints_check(peer: int) -> void:
 
 	for hint in _hints_data():
 		var id: String = str(hint["id"])
+		var said_at: float = float(st["hints_seen"].get(id, 0.0))
 		var goal: String = str(hint.get("goal", ""))
 
-		if st["hints_seen"].has(id) or not _timed_trigger(peer, st, str(hint.get("trigger", ""))):
-			continue
+		if said_at > 0.0:
+			var again: bool = goal != "" and not st["goals_done"].has(goal) and not st["hints_seen"].has(id + "#again") and now_s - said_at >= HINT_REPEAT_S
 
-		st["hints_seen"][id] = now_s
+			if not again:
+				continue
+
+			st["hints_seen"][id + "#again"] = now_s
+		elif not _timed_trigger(peer, st, str(hint.get("trigger", ""))):
+			continue
+		else:
+			st["hints_seen"][id] = now_s
 
 		if goal != "" and st["goals_done"].has(goal):
 			continue   # the goal is already done: the hint would only nag

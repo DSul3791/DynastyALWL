@@ -38,7 +38,7 @@ The 69 copper of goal rewards buys the backpack plus a waterskin. Hob sells no b
 **Fixed (#53, merged 3 Nov, `or_have`):** the axe goal used to count only an axe you **make** (`made_item`). A bought axe fells trees but never completes the goal, and the fell, fire and later goals wait behind it. The hint asks for a stone axe, so a player who bought one has to craft a second.
 
 ## What works today and what does not
-- **Works:** everything above, plus clothes from hide, torches, a stone forge, the chopping block and the log chain (F-16 fixed: a held log fills log recipes), the thatch house, and goals and hints on screen (a guide hint in a box with an OK button, each said once).
+- **Works:** everything above, plus clothes from hide, torches, a stone forge, the chopping block and the log chain (F-16 fixed: a held log fills log recipes), the thatch house, and goals and hints on screen (one line at the top; a hint whose goal is still open is said once more after 5 minutes).
 - **Needs code before a player sees it (not re-checked on 3 Nov unless named):** flint, ore and coal pickup, water gathering, farming, the learn system, shops beyond Hob. 13 hints never show because the server has no trigger for them (docs/handoff/DINO_ROUND6_GOALS.md), 3 of them early game.
 - **Not measured:** how long a real first hour takes. CRAFT_PACING.md says what to time.
 
