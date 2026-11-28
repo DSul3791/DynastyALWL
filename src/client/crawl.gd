@@ -91,8 +91,10 @@ func setup(sk: Skeleton3D, spec: Dictionary) -> PackedStringArray:
 func _process_modification() -> void:
 	var sk: Skeleton3D = get_skeleton()
 
-	if sk != null and (player == null or lowers(str(player.current_animation))):
-		flat_now = player == null or flat(str(player.current_animation))
+	# assigned_animation, not current_animation: a once clip (the bite, the swipe) that has ended holds its last pose with current_animation
+	# empty, and that held pose stood hunched (Lane A, PR #2047 pictures).
+	if sk != null and (player == null or lowers(str(player.assigned_animation))):
+		flat_now = player == null or flat(str(player.assigned_animation))
 		apply(sk)
 
 

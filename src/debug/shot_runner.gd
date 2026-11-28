@@ -20,6 +20,7 @@ extends Node
 #   --shot-skill=SKILL:VALUE  an admin skill set 6 s after connecting (look rig --skill): e.g. tracking:5 to see the trail signs (data/look/trail_signs.json)
 #   --shot-animals=bear,deer[,young_bear]  one animal of each in a row 4 m ahead of the player, built by the game's own animal view (a realistic
 #                       model from data/animals/models.json when its files are there, else the code body; a young_ prefix draws it at young size), standing in its graze clip
+#   --shot-animal-at=S  the --shot-animals row's clip held at S seconds in (a once clip otherwise ends on its last pose before the picture)
 #   --shot-animal-role=R  (dead: each lies as its own dead body; carcass: the old hand-built body) the --shot-animals row plays role R's clip instead (21: the drink, docs/design/animals_drink_client_design.md; 3: alert; 10 the warn, 16 the jaw-pop;
 #                       walk, trot or run: the gait clip a moving or fleeing animal plays), and logs which clip each played. The row hides grass and plants
 #   --shot-bow=STATE[:DRAW]  hold a given bow in this pose: idle (ready to shoot, the string at rest), raised[:0 to 1] (the string drawn that far) or drawn (at the jaw);
@@ -141,6 +142,7 @@ const CarcassLookScript := preload("res://src/client/carcass_look.gd")
 const AnimalGait := preload("res://src/client/animal_gait.gd")
 var animal_names: PackedStringArray = PackedStringArray()   # --shot-animals=bear,deer: one animal of each in a row (_show_animals)
 var animal_role: String = "0"     # --shot-animal-role=R: the row plays that role's clip (21 the drink), falling back to role 0 as the game does
+var animal_at: float = -1.0       # --shot-animal-at=S: the row's clip held at S seconds in (mid-bite), not played on
 var _animals_t: int = 0
 var flora_names: PackedStringArray = PackedStringArray()    # --shot-flora=raspberry,bramble: one plant of each in a row with name tags
 var _flora_t: int = 0
@@ -297,6 +299,8 @@ func setup(owner_client, args: Array) -> void:
 			no_plants = true
 		elif argument.begins_with("--shot-animal-role="):
 			animal_role = argument.trim_prefix("--shot-animal-role=")
+		elif argument.begins_with("--shot-animal-at="):
+			animal_at = float(argument.trim_prefix("--shot-animal-at="))
 		elif argument.begins_with("--shot-flora="):
 			flora_names = argument.trim_prefix("--shot-flora=").split(",", false)
 		elif argument == "--shot-summer":
@@ -1173,6 +1177,10 @@ func _show_animals(now: int) -> void:
 
 			if clip != "" and player.has_animation(clip):
 				player.play(clip)
+
+				if animal_at >= 0.0:
+					player.seek(minf(animal_at, player.get_animation(clip).length), true)
+					player.pause()
 
 			drawn.append("%s model, role %s plays %s%s" % [name_text, animal_role if roles.has(animal_role) or animal_role in ["walk", "trot", "run"] else "0 (no role %s)" % animal_role, clip, " (voxel ground)" if voxel else ""])
 		else:
