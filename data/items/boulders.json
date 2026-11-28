@@ -340,7 +340,26 @@
 			"radius_m": [0.3, 0.45],
 			"stones": [6, 12],
 			"grade": {"gold": 0.25, "silver": 0.45, "amethyst": 0.3, "agate": 0.35, "garnet": 0.3, "quartz": 0.25},
-			"say": "You dig into a pocket of %s. Break it out with a pick or the Stone Hammer."
+			"say": "You dig into a pocket of %s. Break it out with a pick or the Stone Hammer.",
+			"outcrop_radius_m": [0.5, 0.8],
+			"outcrop_stones": [20, 40],
+			"outcrop_grade": 0.3
+		},
+		"veins_note": "Gold and silver veins (R-RES-PRECIOUS, Dave 27 Nov 2026, go 28 Nov: \"in veins along side the deeper iron, tin veins under the mountains or up in the mountains. they should be spread so as to entice the players to travel, make roads, build caravans and enterprise around building mines etc. also we could have gem stones and such in reasonable places or maybe they become something only discovered by a percentage chance as you mine deeper\"). resource_context._veins: an iron or tin source (metals) at journey_min or farther inland (the rich layer and the mountains) starts a vein with chance x (0.5 + its size), never within gap_m of another vein's start. finds: gold or silver by weight. It runs uphill from the source's edge under the mountain for length_m: a pocket every step_m (a dig within r_m that reaches its depth opens it, as any pocket), the first outcrop_points lying on the ground as rocks with no dig (pocket_rock outcrop_*: bigger, more stones, grade x outcrop_grade), the rest buried deeper along it (depth_m, shallow end to deep end). Under each buried pocket, gem_below_m deeper, a gem with chance gem_per_m x the pocket's depth (3 m down: 18 percent); gems: [find, journey_min], one of those that fit picked at random. Same pocket save and breaking as every pocket: any pick or the Stone Hammer. Sell value only (D-ORE-1): no recipes, coins or trade. All values PROVISIONAL, docs/design/RESOURCE_DISTRIBUTION.md RD-17.",
+		"veins": {
+			"metals": ["iron", "tin"],
+			"journey_min": 0.5,
+			"chance": 0.35,
+			"gap_m": 1500.0,
+			"finds": [["silver", 0.55], ["gold", 0.45]],
+			"length_m": [120.0, 300.0],
+			"step_m": 10.0,
+			"outcrop_points": 3,
+			"depth_m": [0.6, 3.5],
+			"r_m": 2.0,
+			"gem_per_m": 0.06,
+			"gem_below_m": 0.8,
+			"gems": [["agate", 0.0], ["amethyst", 0.0], ["quartz", 0.0], ["garnet", 0.75]]
 		}
 	},
 	"flint": {
