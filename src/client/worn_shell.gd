@@ -417,21 +417,34 @@ static func _places(verts: PackedVector3Array, kept: PackedInt32Array) -> Packed
 	return out
 
 
-# The normals of each place group averaged, one per kept vertex.
+# One push per place group, for each kept vertex: the group's normals averaged, made longer so every copy still stands the full distance out along its own normal
+# (Lane A da27d122: a plain average left 37 to 52 points of a seam nearer the skin than a third of the distance). At most MAX_SEAM_PUSH times as long, at a sharp crease.
+const MAX_SEAM_PUSH := 2.5
+
+
 static func _shared(normals: PackedVector3Array, kept: PackedInt32Array, group_of: PackedInt32Array) -> PackedVector3Array:
 	var sums: PackedVector3Array = PackedVector3Array()
+	var least: PackedFloat32Array = PackedFloat32Array()      # per group: the smallest share of the average along any copy's own normal
 	var out: PackedVector3Array = PackedVector3Array()
 	out.resize(kept.size())
 
 	for i in range(kept.size()):
 		if group_of[i] >= sums.size():
 			sums.resize(group_of[i] + 1)
+			least.resize(group_of[i] + 1)
+			least[group_of[i]] = 1.0
 
 		sums[group_of[i]] += normals[kept[i]]
 
 	for i in range(kept.size()):
 		var n: Vector3 = sums[group_of[i]]
-		out[i] = n.normalized() if n.length_squared() > 1e-12 else normals[kept[i]]
+
+		if n.length_squared() > 1e-12:
+			least[group_of[i]] = minf(least[group_of[i]], n.normalized().dot(normals[kept[i]].normalized()))
+
+	for i in range(kept.size()):
+		var n: Vector3 = sums[group_of[i]]
+		out[i] = n.normalized() / maxf(least[group_of[i]], 1.0 / MAX_SEAM_PUSH) if n.length_squared() > 1e-12 else normals[kept[i]]
 
 	return out
 
