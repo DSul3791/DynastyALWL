@@ -328,6 +328,7 @@ func _show_tabs() -> void:
 func _tab(text: String, chosen: bool, can: bool, on_press: Callable) -> Button:
 	var tab: Button = _row(text, chosen, can or chosen, null, on_press)
 	tab.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tab.autowrap_mode = TextServer.AUTOWRAP_OFF   # a tab sizes to its one line (rows wrap, tabs do not)
 	tab.clip_text = false
 	tab.disabled = not can
 	tab.add_theme_stylebox_override("disabled", tab.get_theme_stylebox("normal"))   # a dim end button in the book's look, not the engine's grey
