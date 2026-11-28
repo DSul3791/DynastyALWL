@@ -35,7 +35,7 @@ Dave restated the paint as a tiered cake seen from above: iron as small rocks ev
 - **Copper and tin on dry land**: 2.5% a try inside their area (was 1%), so small rocks lie across the whole layer, not only by water. Still none outside the area (no copper on the beach).
 - **Iron**: area 100% of the island (was 90%), so small iron lies by the shore too; iron stones are one-ore by the shore and come in two- and three-ore sizes going up (50/30/20 at full rich).
 - **Danger inland** (his words): bears, wolves and foxes may den in caves (`animals.json` cave_den_claim) and goblins live in river-side caves; nothing scales danger with distance inland yet (goblins are the NPC stage).
-- **Gold, silver, gems** (R-RES-PRECIOUS, an idea for later): today only the dig pockets below (gold in gravels and at copper and iron sources well inland, silver at copper sources, amethyst, agate, garnet, quartz) as sell-value finds; no veins of them.
+- **Gold, silver, gems** (R-RES-PRECIOUS; Dave's go 28 Nov 2026): the dig pockets below (item 10) and, since RD-17, gold and silver veins with gems deeper down ("Gold and silver veins" below).
 
 ## Stage 2: coal seams and finds revealed by digging
 
@@ -87,10 +87,20 @@ Nothing is regenerated and no world is reset. Two save fields are added to `worl
 
 ## Not done yet (tracked)
 
-- Pockets do not read the geology's own gold, silver and gem bodies: they follow the sources. Coal districts read the host rock only at each seam's centre (item 19).
+- Pockets and veins do not read the geology's own gold, silver and gem bodies (baked fault veins, gem scatters): they follow the sources. Veins on the real tiles (how many, nearest by route from spawn) and a picture of a vein outcrop: NOT MEASURED (Lane A). Coal districts read the host rock only at each seam's centre (item 19).
 - Pictures (Lane A) of a coal seam's outcrops and an opened pocket rock.
 - Build time: 7.9 s on Lane B (worker thread). Not yet measured on Dave's PC. Scatter cost per cell: NOT MEASURED.
 - Pictures (Lane A): rounded, broken and jagged rocks; a source with its outcrops and fragments; a river with clues.
 - Handoff 13 (stage 4, items 15 to 20): checked in code and its test, and measured in the cloud mirror. Lane runs still to do: the server log lines and resource_map.gd on the real tiles; seam coal through an Improved smelter in one test; how many seams the host rock keeps.
 - Region boundaries and reloads with other seeds: lane work.
 - A danger ring round spawn itself would refuse every route ("NO reachable ..." in the log, no assured source); no known camp is that close today.
+
+## Gold and silver veins (RD-17, PROVISIONAL, 28 Nov 2026)
+Dave 27 Nov 2026, go 28 Nov (R-RES-PRECIOUS): veins "along side the deeper iron, tin veins under the mountains or up in the mountains", spread "to entice the players to travel, make roads, build caravans and enterprise around building mines", gems "discovered by a percentage chance as you mine deeper". `resource_context._veins`, settings `boulders.json` distribution `veins`:
+- Where: an iron or tin source at journey 0.5 or farther in (the rich layer at the mountain foot, the first plateau and the mountains) starts a vein with chance 0.35 x (0.5 + its size); no vein starts within 1,500 m of another, so they lie far apart. Silver 55%, gold 45%.
+- Shape: from the source's edge it runs uphill, under the mountain, 120 to 300 m: a pocket every 10 m. The first 3 lie on the ground as outcrop rocks (0.5 to 0.8 m, 20 to 40 stones, grade x 0.3), laid with the cell with no dig and saved like a dug pocket. The rest are buried, 0.6 m down at the shallow end to 3.5 m at the deep end; a dig within 2 m that reaches the depth opens one as any pocket (item 10).
+- Gems: 0.8 m under each buried pocket, a gem with chance 0.06 x the pocket's depth (1 m down 6%, 3 m down 18%): agate, amethyst or clear quartz (Crystal lens), garnet too at journey 0.75 and over.
+- Mining: as every pocket rock, any pick or the Stone Hammer. Finds are sell value only (D-ORE-1): no recipes, coins or trade yet.
+- Map check: the look lines name the nearest `gold vein outcrop`, `silver vein`, gem and pocket of each find by route (Lane A).
+No terrain version change, no bake, no world reset: veins are worked out at server start like the pockets.
+
