@@ -53,6 +53,7 @@ The single complete list of every input (keyboard, mouse, held versus tap, conte
 | (no key) | Look-angle ruler: underground or in water, ticks beside the crosshair every 10 degrees from -40 (down) to +40 (up) plus one at 45, a number on 0, 20 and 40, and a yellow marker at the angle you are looking. |
 | Ctrl+Shift+F3 | Admin and debug: debug details on or off (the long diagnostic list; default HUD is only build, position, last sound). Also Esc > Settings. Threads add lines with `debug_hud.add_line(name, callable)`. |
 | Enter (or Esc) with the welcome card showing | Closes the welcome card (welcome_card.gd); the card takes no clicks |
+| Enter, or click OK, with a hint card showing | Closes the hint card (hint_card.gd, R-HUD-HINT-BOX); the mouse goes back to the camera |
 | Esc > Advanced > Measure this machine | About 1 minute: stands still and slowly turns at Low, Medium and High and shows fps, 1% low, worst frame, CPU and GPU ms, draw calls and video memory per tier; saved to machine_run.txt in the game data folder. Press it again to stop or to close the table |
 | Ctrl+Shift+P | GPU probe: stand still, press once; after about 20 s it lists what each piece (grass, trees, ground, sea, shadows, SSAO, glow, fog, anti-aliasing) costs in GPU ms; also saved to gpu_probe.txt in the game data folder |
 | Ctrl+Shift+F8 | Colour the water by what the shader sees (debug): red = running water, blue = still, green = foam; press again to go back |

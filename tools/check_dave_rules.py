@@ -21,6 +21,7 @@ GODOT = {   # rulings checked by behaviour, not data: the test that guards each
     "R-HUD-STATUS": ["test_status_strip"],
     "R-HUD-INSPECT-PLUS": ["test_inspect_reticle"],
     "R-HUD-JOURNAL-BOOK": ["test_goal_ui"],
+    "R-HUD-HINT-BOX": ["test_hint_card", "test_goals"],
     "R-CTRL-E-CLOSEST": ["test_e_priority"],
     "R-CRAFT-KEPT-TOOL": ["test_server_items"],
     "R-CRAFT-SMALL-BY-HAND": ["test_campfire_both"],

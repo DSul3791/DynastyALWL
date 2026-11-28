@@ -66,6 +66,7 @@ const CaveinDeathScript := preload("res://src/client/cavein_death.gd")
 const DeathScreenScript := preload("res://src/client/death_screen.gd")
 const CharacterStoreScript := preload("res://src/client/character/character_store.gd")
 const WelcomeCardScript := preload("res://src/client/welcome_card.gd")
+const HintCardScript := preload("res://src/client/hint_card.gd")
 const DripViewScript := preload("res://src/client/drip_view.gd")
 const ThunderScript := preload("res://src/shared/thunder.gd")
 const GameMenuScript := preload("res://src/client/game_menu.gd")
@@ -471,6 +472,8 @@ var test_chop: bool = false
 var lag_run: Node = null               # --lag-run: the scripted early-game lag run (src/client/lag_run.gd, tools/lag_run.sh)
 var motion_audit = null                 # --motion-audit or a robot: the walk measured against the keys (src/client/motion_audit.gd)
 var welcome_card = null                # the welcome card, once per character on this computer (welcome_card.gd)
+var hint_card = null                   # the guide hints' OK box (hint_card.gd, R-HUD-HINT-BOX)
+var _hurt_msec: int = -100000          # the last blow that landed on this player (the hint card waits a while after it)
 var robot: Node = null                 # --robot=NAME: a robot play-tester drives this client by key presses (src/client/robot_play.gd, tools/robots.sh)
 var _block_port_override: int = 0      # --block-port=N: the block line connects here instead of the port the server named (a test relay, tools/lossy_link.py)
 var test_shoot: bool = false            # --shoot: draw and loose one arrow with no key presses (SHOOT TEST lines)
@@ -1882,6 +1885,7 @@ func _welcome_body(info: Dictionary) -> void:
 	var tw_items_setup: int = Probe.start()
 	items.setup(net, layer, root, func(): return body.global_position, _ground_below)
 	Probe.stop("welcome: items setup", tw_items_setup)
+	_setup_hint_card()
 	var tw_strip: int = Probe.start()
 	_setup_status_strip(layer)   # after items.setup: its reads use the vitals data the view loads there
 	Probe.stop("welcome: status strip", tw_strip)
@@ -1973,6 +1977,7 @@ func _welcome_body(info: Dictionary) -> void:
 			sound.gear.dress(str(changed[0]))   # one sound for a change (a swap sends both pieces in one list)
 	items.skill_up_event = func() -> void: sound.slots.play("skill_tock", body.global_position + Vector3(0.0, 1.5, 0.0))   # a skill rises: a soft wooden tock (the skill group cools down 20 s)
 	items.hurt_event = func(lost: int) -> void:
+		_hurt_msec = Time.get_ticks_msec()
 		sound.slots.play("player_hurt", body.global_position + Vector3(0.0, 1.5, 0.0), Vector3.INF, clampf(float(lost) / 25.0, 0.4, 1.0))   # a blow lands on you: a sharp breath, louder for a bigger hit
 		_attacker_snarl()
 	items.fuel_event = func(): sound.itemfx.fuel_pressed()
@@ -2920,6 +2925,62 @@ func _offer_welcome() -> void:
 	_welcome_offered = true
 	var build: int = int(world.get("server_build", 0)) if bool(world.get("server_stamped", false)) else 0   # a release server: a new build is a new world (QA #13)
 	_welcome().offer(CharacterStoreScript.active_id(), str(world.get("world_name", "")), build)
+
+
+# The hint card (R-HUD-HINT-BOX) for a real player: robots and the test runs keep the passing line they read.
+func _setup_hint_card() -> void:
+	if robot != null or test_screen_audit or DisplayServer.get_name() == "headless" or items == null:
+		return
+
+	hint_card = HintCardScript.new()
+	add_child(hint_card)
+	items.hint_card = hint_card
+
+
+func _tick_hint_card() -> void:
+	if hint_card != null:
+		hint_card.tick(_hint_safe(), Time.get_ticks_msec(), menu_open or items.screen_open() or (held != null and held.blueprints.is_open))
+
+
+const HINT_CALM_MS := 10000     # no blow landed on the player this long
+const HINT_THREAT_M := 30.0     # and no animal attacking or charging within this
+
+
+# Safe for a card that takes the mouse: nothing else on screen, the mouse on the camera, no fight or danger, and no mouse button held (a held
+# swing would lose its release). The game does not pause, so a card waits for this and steps aside the moment it is false.
+func _hint_safe() -> bool:
+	if body == null or menu_open or shot_lock or swimming or (welcome_card != null and welcome_card.showing):
+		return false
+
+	if items.screen_open() or items.body_out() or (held != null and (held.blueprints.is_open or held.tool_busy())):
+		return false
+
+	if hint_card.showing == "" and (Input.mouse_mode != Input.MOUSE_MODE_CAPTURED or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)):
+		return false
+
+	if Time.get_ticks_msec() - _hurt_msec < HINT_CALM_MS:
+		return false
+
+	return _animal_view_node == null or (_animal_view_node.attacker_near(body.global_position, HINT_THREAT_M) as Dictionary).is_empty()
+
+
+var _audit_card = null
+
+
+# The screen audit's own hint card (the audit run has none of its own): it never touches the mouse.
+func _audit_hint_card():
+	if _audit_card == null:
+		_audit_card = HintCardScript.new()
+		_audit_card.mouse_free = false
+		add_child(_audit_card)
+
+	return _audit_card
+
+
+# The longest card the guide gives: a goal done with the copper journey next.
+func _audit_hint_line() -> String:
+	var copper: Dictionary = items.goal_book.row("copper_ore") if items.goal_book != null else {}
+	return "Goal done: Make every stone tool. You earn 10 copper. Next: %s. %s" % [str(copper.get("title", "Find copper ore")), str(copper.get("howto", ""))]
 
 
 func _welcome():
@@ -4690,6 +4751,7 @@ func _run_screen_audit() -> void:
 		var scale_name: String = display.TEXT_NAMES[text_index]
 		var shows: Array = [["HUD", func() -> void: pass, func() -> void: pass],
 			["welcome card", func() -> void: _welcome().show_card(), func() -> void: _welcome().close()],
+			["hint card, copper goal", func() -> void: _audit_hint_card().show_text(_audit_hint_line()), func() -> void: _audit_hint_card().ok()],
 			["inventory", func() -> void: items.toggle(), func() -> void: items.toggle()],
 			["character", func() -> void: items.toggle_character(), func() -> void: items.toggle_character()],
 			["character, everything shown", func() -> void:
@@ -5694,6 +5756,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	if welcome_card != null and event is InputEventKey and welcome_card.take_key(event):
 		return   # Enter or Esc closes the welcome card first (Esc does not open the menu under it)
+
+	if hint_card != null and event is InputEventKey and hint_card.take_key(event):
+		return   # Enter is the hint card's OK
 
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
 		if spyglass.active:
@@ -6845,6 +6910,7 @@ func _process(delta: float) -> void:
 	# time and its monitors; called later in this function it saw the next frame's first pieces instead (PR #1952 review).
 	Probe.frame(delta)
 	_note_after_welcome(delta)
+	_tick_hint_card()
 	_log_frame(delta)
 	if _water_spam_per_s > 0.0 and flora != null and Time.get_ticks_msec() >= _dig_spam_next_msec and Time.get_ticks_msec() - connected_msec > 8000:
 		_dig_spam_next_msec = Time.get_ticks_msec() + int(1000.0 / _water_spam_per_s)

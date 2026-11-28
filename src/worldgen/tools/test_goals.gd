@@ -400,7 +400,7 @@ func _init() -> void:
 	var gone: Dictionary = admin._goal_state_of(1)
 	check(hoe_recipe >= 0 and admin.count_for(1, "wooden_hoe") == 1, "Admin mode crafted a Wooden - Hoe for free (recipe %d)" % hoe_recipe)
 	check(not gone["goals_done"].has("hoe") and not gone["goals_done"].has("story") and float(gone["goal_counts"].get("moved_lit_night", 0.0)) == 0.0, "and neither the free hoe, a talk at 21:00 nor a night walk in Admin mode counts once it is off (%s)" % str(gone["goals_done"].keys()))
-	# Hints: said once when their trigger holds, saved with the character, repeated only for a goal still open after 5 minutes.
+	# Hints: said once when their trigger holds, saved with the character, never repeated (the client's OK box, R-HUD-HINT-BOX).
 	said.clear()
 	var hinter = make("user://test_goals_hints", {}, [false])
 	hinter.hint_every = 1   # every goals tick looks at the hints (the game looks every 4th slow tick)
@@ -430,6 +430,13 @@ func _init() -> void:
 	check(said.has("Press E on nettles or tall grass to get plant fibre."), "nine sticks in the pack bring the fibre hint")
 	var seen: Dictionary = hinter._goal_state_of(1)["hints_seen"]
 	check(seen.has("move") and seen.has("bars") and seen.has("fibre"), "the said hints are saved with the character (%s)" % str(seen.keys()))
+	seen["fibre"] = float(seen["fibre"]) - 600.0   # said 10 minutes ago, its goal still open
+	var fibre_said: int = said.count("Press E on nettles or tall grass to get plant fibre.")
+
+	for n in range(4):
+		hinter._goals_tick()
+
+	check(said.count("Press E on nettles or tall grass to get plant fibre.") == fibre_said, "a hint whose goal is still open is not said again later")
 	# Camp goals: worn_warmth, talked (npc and hours), moved_lit_night (metres), through the same machinery.
 	var camp = make("user://test_goals_camp", {}, [false])
 	camp.game_seconds = func(): return 21.0 * 3600.0   # 21:00
