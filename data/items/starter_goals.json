@@ -66,7 +66,7 @@
 		{
 			"id": "hammer",
 			"title": "Make a Stone - Hammer",
-			"hint": "Make a Stone - Hammer from a stone, a stick and a twine. You build and repair with it, and it breaks stone and ore from boulders.",
+			"hint": "Make a Stone - Hammer from a stone, a stick and a twine. You build and repair with it, and it breaks stones, copper ore, tin ore and coal from boulders (iron needs a bronze or better pick).",
 			"after": [
 				"fell"
 			],
