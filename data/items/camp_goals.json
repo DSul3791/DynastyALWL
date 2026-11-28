@@ -355,7 +355,7 @@
 		{
 			"id": "copper_ore",
 			"title": "Find copper ore",
-			"hint": "This is a journey, not a walk round camp. There is no copper by the sea: it lies inland, along rivers and streams toward the hills, richest round the foot of the mountains and on the first high ground. Expect well over a kilometre, so take food, water and a torch, and mark your camp on the map (M). Follow a river upstream: green or blue-green stained pebbles in the stream bed mean copper further up. They get bigger and commoner until you reach green outcrops. Pick small pieces up with E; break bigger rocks with any pick or the Stone - Hammer. Nine pieces: three for the copper ingots now and six more for bronze later.",
+			"hint": "This is a journey, not a walk round camp. There is no copper by the sea: it lies inland, along rivers and streams toward the hills, richest round the foot of the mountains and on the first high ground. Expect well over a kilometre, so take food, water and a torch. Your campfire shows on the map (M), so you can find your way back. Follow a river upstream: green or blue-green stained pebbles in the stream bed mean copper further up. They get bigger and commoner until you reach green outcrops. Pick small pieces up with E; break bigger rocks with any pick or the Stone - Hammer. Nine pieces: three for the copper ingots now and six more for bronze later.",
 			"after": [
 				"hammer"
 			],
