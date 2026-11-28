@@ -60,7 +60,7 @@ func _initialize() -> void:   # nodes added to root enter the tree only after a 
 	var changes: Array = [0]
 	book.achieved.connect(func(r, copper): heard.append([r["id"], copper]))
 	book.changed.connect(func(): changes[0] += 1)
-	book.on_goals([row("drink", "Drink at the water", true), row("fibre", "Gather plant fibre", false), row("twine", "Twist twine", false, ["fibre"]), row("axe", "Make a Stone - Axe", false, ["twine"])])
+	book.on_goals([row("drink", "Drink fresh water", true), row("fibre", "Gather plant fibre", false), row("twine", "Twist twine", false, ["fibre"]), row("axe", "Make a Stone - Axe", false, ["twine"])])
 	check(book.rows.size() == 4 and heard.is_empty() and changes[0] == 1, "the join's list fills the book silently, done goals included")
 	check(GoalsHud.titles(book) == PackedStringArray(["Gather plant fibre", "Twist twine"]), "the box shows the first two unfinished goals in the authored order (%s)" % str(GoalsHud.titles(book)))
 	Bindings.use_path("user://test_goal_ui_keys.json")   # no saved file here: the defaults
@@ -71,7 +71,7 @@ func _initialize() -> void:   # nodes added to root enter the tree only after a 
 	check(GoalsHud.titles(book) == PackedStringArray(["Gather plant fibre", "Make a Stone - Axe"]), "and the box moves on to the next unfinished one (%s)" % str(GoalsHud.titles(book)))
 	book.on_done("twine", 0)
 	check(heard.size() == 1, "a repeated goal_done is not announced again")
-	book.on_goals([row("drink", "Drink at the water", true), row("fibre", "Gather plant fibre", true), row("twine", "Twist twine", true, ["fibre"]), row("axe", "Make a Stone - Axe", false, ["twine"])])
+	book.on_goals([row("drink", "Drink fresh water", true), row("fibre", "Gather plant fibre", true), row("twine", "Twist twine", true, ["fibre"]), row("axe", "Make a Stone - Axe", false, ["twine"])])
 	check(heard.size() == 1 and GoalsHud.titles(book) == PackedStringArray(["Make a Stone - Axe"]), "a rejoin's list replays nothing; one goal left shows one title")
 	check(GoalsHud.howto_line(book) == "", "the how-to line goes once the first three goals are done")
 	book.on_done("axe", 5)
@@ -135,7 +135,7 @@ func _initialize() -> void:   # nodes added to root enter the tree only after a 
 	view._layer = layer
 	var coins: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/coins.json"))
 	view._coins_cfg = coins
-	book.on_goals([row("drink", "Drink at the water", true), row("fibre", "Gather plant fibre", false, [], 3, 12, 4), row("twine", "Twist twine", false, ["fibre"], 0),
+	book.on_goals([row("drink", "Drink fresh water", true), row("fibre", "Gather plant fibre", false, [], 3, 12, 4), row("twine", "Twist twine", false, ["fibre"], 0),
 		row("axe", "Make a Stone - Axe", false, ["twine"], 5)])
 	var journal = Journal.new()
 	journal.setup(view, layer, book)

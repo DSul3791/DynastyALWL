@@ -62,7 +62,7 @@ func _client_side() -> void:
 	strip.tick(0.0, true)
 	check(strip.shown() == ["hunger", "thirst"], "at first only hunger and thirst show (%s)" % str(strip.shown()))
 	check(strip.get_children().filter(func(n: Node) -> bool: return n is Label).is_empty(), "the first look after joining names nothing")
-	check(strip.tip_of("thirst") == "Water 5%: you are low on water. Drink soon.", "the hover words take the tone and the number ('%s')" % strip.tip_of("thirst"))
+	check(strip.tip_of("thirst") == "Water 5%: you are low on water. Drink fresh water soon.", "the hover words take the tone and the number ('%s')" % strip.tip_of("thirst"))
 	check(strip.cell_of("hunger").tooltip_text == "Food 8%: you are low on food. Eat soon.", "and are the symbol's tooltip")
 	var thirst_cell: Control = strip.cell_of("thirst")
 	check(is_equal_approx(thirst_cell.position.x + thirst_cell.size.x, strip.size.x) and is_equal_approx(thirst_cell.size.y, float(ArtKit.HOT)), "thirst sits next to the hotbar at full height")

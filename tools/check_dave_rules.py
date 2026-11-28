@@ -316,6 +316,25 @@ def inventory_worn():
     check("R-HUD-INVENTORY-WORN", "SubViewport" not in code and "make_avatar" not in code, "no character picture in the inventory")
 
 
+def dig_stones():
+    """R-RES-DIG-STONES: every shovelful of soil or clay ground brings up at least one Stone, and clay is not cut for it (R-CRAFT-CLAY-DIG)."""
+    dig = data("data/items/digging.json")
+    grounds = {m: dig["yield"][m] for m in ("loam", "forest_humus", "silt", "alluvium", "stony_soil", "peat", "mud", "clay")}
+    grounds["default"] = dig["default"]
+    short = [m for m, rows in grounds.items() if not any(r[0] == "stone" and int(r[1]) >= 1 for r in rows)]
+    check("R-RES-DIG-STONES", not short, f"every soil and clay dig gives at least one stone (none in: {short})")
+    clay = [r for r in dig["yield"]["clay"] if r[0] == "clay"]
+    check("R-RES-DIG-STONES", clay and int(clay[0][1]) >= 2 and int(clay[0][2]) >= 4, f"clay ground still gives 2 to 4 clay ({clay})")
+
+
+def drink_fresh():
+    """R-WATER-DRINK-FRESH: the player is told to "drink fresh water", not "drink at the water"."""
+    goal = next(g for g in data("data/items/starter_goals.json")["goals"] if g["id"] == "drink")
+    hint = next(h for h in data("data/items/hints.json")["hints"] if h["id"] == "drink")
+    words = [goal["title"], goal["hint"], hint["text"]]
+    check("R-WATER-DRINK-FRESH", all("drink fresh water" in w.lower() for w in words), f"the drink goal and hints say drink fresh water ({words})")
+
+
 def ruling_lines():
     out = {}
     for line in (ROOT / "docs/RULINGS.md").read_text(encoding="utf-8").splitlines():
@@ -330,7 +349,8 @@ def main():
              "R-STORE": names_and_storage, "R-CORE-NEWER-WINS": godot_guards, "R-HUD-PROMPTS": e_prompts,
              "R-FLORA-WITNESS-GLOW": witness_glow, "R-PLAYER-CRAWL": stealth, "R-HUNT-DEAD-NAME": dead_names, "R-HUNT-SIGN-SOUND": sign_sound, "R-CORE-PASS-OUT": pass_out,
              "R-ANIMAL-SEEN-FAR": seen_far, "R-MOVE-RUN-FEET": run_feet, "R-CRAFT-MAKING": campfire_both, "R-TEAM-LANE-C-DRIVE": lane_on_c, "R-ITEM-IRON-LOOK": iron_look,
-             "R-RES-BOULDER-PHYSICS": rocks_at_rest, "R-ANIMAL-ALLIGATOR": alligator, "R-HUD-INVENTORY-WORN": inventory_worn}
+             "R-RES-BOULDER-PHYSICS": rocks_at_rest, "R-ANIMAL-ALLIGATOR": alligator, "R-HUD-INVENTORY-WORN": inventory_worn, "R-WATER-DRINK-FRESH": drink_fresh,
+             "R-RES-DIG-STONES": dig_stones}
     for key, step in steps.items():
         try:
             step()

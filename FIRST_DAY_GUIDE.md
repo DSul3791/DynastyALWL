@@ -4,7 +4,7 @@ What a new player does, in order, with what it costs after the pacing pass. Ever
 
 | # | Do this | Costs | Time (craft) | Goal and hint |
 |---|---|---|---|---|
-| 1 | Drink at the pond | nothing | - | "Stand at the water's edge and press E to drink." |
+| 1 | Drink fresh water | nothing | - | "Drink fresh water from a river or lake: stand at its edge and press E." |
 | 2 | Pick sticks, stones and plant fibre | about 12 fibre from nettles or grass, 8 sticks | gathering | "Press E to pick things up." |
 | 3 | Twist twine | 3 fibre each (2 s) | 2 s | "Press I, pick Twine..." |
 | 4 | Make a Stone axe | 1 stone, 1 stick, 2 twine | 10 s | goal: make an axe |
