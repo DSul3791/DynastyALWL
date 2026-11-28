@@ -6362,11 +6362,12 @@ func _give_dig_yield(peer: int, at: Vector3, tier: int = 1, pieces: int = 1) -> 
 	practice(peer, "dig")
 	var under: Array = _dig_cfg.get("under", {}).get(material, [])
 
-	if under.size() == 2 and roll_chance(peer, _fate_rng, float(under[1])):
+	if under.size() >= 2 and roll_chance(peer, _fate_rng, float(under[1])):
 		var layer: int = table.number_of(str(under[0]))
+		var count: int = roll_amount(peer, _fate_rng, int(under[2]), int(under[3])) if under.size() >= 4 else 1   # [item, chance, min, max]; min..max as a soil row
 
-		if layer > 0:
-			give(peer, layer, 1)
+		if layer > 0 and count > 0:
+			give(peer, layer, count * pieces)
 
 	# digging.json finds: a small chance of something living in the soil (a worm in moist living soil), one per stroke at most.
 	for find in _dig_cfg.get("finds", []):
