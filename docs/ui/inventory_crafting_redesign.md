@@ -76,7 +76,7 @@ Performance on weak machines is a separate job: a world render scale option for 
 |---|---|---|---|---|---|
 | Name plate | centred on 960 | 30 | text + 60, at most 368 | 46 | The character's full name engraved ("ALDWIN OF THE FORD"). It steps down 34, 30, 26, 24, 22, 20, 18 px and letter-spacing 3 to 1 until it fits ("ALDWIN OF THE FORD" fits at 22 px); no line under it |
 | Gear, left | 756 | 92 | 96 | 464 | Head, Body, Legs, Feet: 4 slots of 96, evenly spaced |
-| Figure | 862 | 82 | 196 | 478 | The live 3D character wearing what is equipped and holding what is in the hands (the mockup shows the linen shirt, hide boots, the backpack's straps and the stone axe in hand); see 6.6. Caption under it, dim 18: "Live character, as equipped" |
+| Figure | 862 | 82 | 196 | 478 | Removed 27 Nov 2026 (R-HUD-INVENTORY-WORN): the space holds a well for every worn position. |
 | Gear, right | 1068 | 92 | 96 | 464 | Hands, Back, Right hand, Left hand |
 | Stats | 756 | 614 | 408 | 276 | An ornament rule above, then six rows, a fixed 6 px apart (each row grows with the text, so the column still fits its 820 px at the largest text step, 1.2; texttest 9 Nov): a 26 px engraved glyph, the name (18), a 10 px bar from x 888 to 1076, the value right-aligned (SemiBold 18, outlined) |
 
@@ -317,7 +317,7 @@ Dave: *"if we skip putting it in the mockup it won't get fixed later"*. So each 
 2. **Stat names stay the game's own:** Exertion and Energy (Dave: "the actual traits are Exertion and Energy, we are making a change in the way gamers see it"), and Temperature as the character screen already says. Only the colours and glyphs change (6.4).
 3. **The full name on the brass plate,** no line under it (4.2).
 4. **The tenth hotbar key is shown as 0,** because 0 is the key you press; the digit keys 1 to 9 and 0 are fixed to the hotbar and cannot be rebound (`key_bindings.gd` `refusal`). The key-hint row says "1–0 Put on hotbar" (4.1), and the strip labels its tenth slot 0.
-5. **The centre column is the live character model wearing what is equipped,** from the character screen's SubViewport, re-dressed when a gear slot changes, with the light rig in 6.6. It is never a flat silhouette; the mockup's figure is a stand-in that shows where the gear goes.
+5. **The You column has no character picture** (R-HUD-INVENTORY-WORN, Dave 27 Nov 2026): a well for every worn position and the item in hand, six a row, armour left, clothing middle, carried gear right (`src/client/ui/inventory/you_column.gd`). The Tab screen keeps the dressed character.
 
 ## 13. Audit: screens with sizes fixed for the 2880 x 1620 canvas
 

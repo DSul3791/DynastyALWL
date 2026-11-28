@@ -1,7 +1,7 @@
 extends SceneTree
 
-# The You column, redesign step 3d (docs/ui/inventory_crafting_redesign.md sections 4.2 and 6.6): ten gear wells (eight until the outer and waist slots, 10 Nov 2026) with silhouettes
-# while empty, the worn item in its well, the item in hand in the right hand, and the live preview rendering only while the window is open.
+# The You column (R-HUD-INVENTORY-WORN, Dave 27 Nov 2026): no character picture; a well for each of the 27 worn positions and the item in hand,
+# armour left, clothing middle, carried gear right; silhouettes while empty; drop on a well puts on, a worn piece drags out.
 #   godot --headless --path . --script res://src/worldgen/tools/test_you_column.gd
 
 const YouColumn := preload("res://src/client/ui/inventory/you_column.gd")
@@ -116,68 +116,44 @@ func _initialize() -> void:
 	root.add_child(built)
 	part.refresh()
 	await process_frame
-	check(part.wells.size() == 10, "ten gear wells: head, body, outer, legs, feet, hands, back, waist and both hands")
-	check(part.wells["head"].is_empty() and (part.wells["head"].get_node("Ghost") as Control).visible, "an empty well shows its silhouette")
-	check(not part.wells["body"].is_empty() and not (part.wells["body"].get_node("Ghost") as Control).visible, "the worn shirt sits in the body well")
-	# Layers (protocol 107): the Outer well is body:outer, the Body well what is under it, the Head well the outermost head layer.
-	view.worn[view.worn_places().find("body:outer")] = 8
-	view.worn[view.worn_places().find("head:base")] = 9
-	view.worn[view.worn_places().find("head:rigid")] = 10
+	var places: Array = view.worn_places()
+	var all_there: bool = part.wells.has(YouColumn.HAND) and part.wells.size() == places.size() + 1
+
+	for place in places:
+		all_there = all_there and part.wells.has(place)
+
+	check(all_there, "a well for every worn position and the item in hand (%d wells)" % part.wells.size())
+	check(part.wells["head:base"].is_empty() and (part.wells["head:base"].get_node("Ghost") as Control).visible, "an empty well shows its silhouette")
+	check(part.wells["body:mail"].tooltip_text.contains("Body, mail"), "an empty well names its position (%s)" % part.wells["body:mail"].tooltip_text)
+	check(not part.wells["body:base"].is_empty() and not (part.wells["body:base"].get_node("Ghost") as Control).visible, "the worn shirt sits in the body well")
+	# Every layer shows in its own well: the hood under the helm, the shirt under the cloak.
+	view.worn[places.find("body:outer")] = 8
+	view.worn[places.find("head:base")] = 9
+	view.worn[places.find("head:rigid")] = 10
 	part.refresh()
-	check(part.wells["outer"].tooltip_text.contains("Hide cloak") and part.wells["body"].tooltip_text.contains("Linen shirt"), "a cloak shows in the Outer well and the shirt stays in Body (%s / %s)" % [part.wells["outer"].tooltip_text, part.wells["body"].tooltip_text])
-	check(part.wells["head"].tooltip_text.contains("Iron helm"), "the helm over the hood shows in the Head well (%s)" % part.wells["head"].tooltip_text)
-	check(not part.wells["right"].is_empty(), "the item in hand shows in the right hand")
-	check(part.wells["left"].is_empty(), "the left hand is empty until the game has an off-hand item")
-	check(part.wells["head"].custom_minimum_size.is_equal_approx(Vector2(96.0, 96.0)), "gear wells are 96 px")
-	# The pack slot (Dave 15 Nov 2026): a backpack dragged from the inventory onto the Back well is put on; the worn one dragged off comes off.
-	var back_well = part.wells["back"]
-	check(back_well.can_drop.call({"slot": 6}) and not back_well.can_drop.call({"slot": 4}) and not back_well.can_drop.call({"worn": 5}) and not part.wells["head"].can_drop.is_valid(), "the Back well takes a backpack from the inventory, not an axe or a worn piece; other wells take no drops")
+	check(part.wells["body:outer"].tooltip_text.contains("Hide cloak") and part.wells["body:base"].tooltip_text.contains("Linen shirt"), "the cloak and the shirt under it each show (%s / %s)" % [part.wells["body:outer"].tooltip_text, part.wells["body:base"].tooltip_text])
+	check(part.wells["head:rigid"].tooltip_text.contains("Iron helm") and part.wells["head:base"].tooltip_text.contains("Hide hood"), "the helm and the hood under it each show")
+	check(not part.wells[YouColumn.HAND].is_empty(), "the item in hand shows in the hand well")
+	check(not part.wells[YouColumn.HAND].can_drop.is_valid() and not part.wells[YouColumn.HAND].drag_data.is_valid(), "the hand well takes no drops and drags nothing")
+	check(part.wells["head:base"].custom_minimum_size.is_equal_approx(Vector2(YouColumn.GEAR_PX, YouColumn.GEAR_PX)), "wells are %d px" % int(YouColumn.GEAR_PX))
+	# Drop on the well the piece is worn in puts it on; a worn piece drags out as its worn position (the pack slot, Dave 15 Nov 2026).
+	var back_well = part.wells["back:base"]
+	check(back_well.can_drop.call({"slot": 6}) and not back_well.can_drop.call({"slot": 4}) and not back_well.can_drop.call({"slot": 8}) and not back_well.can_drop.call({"worn": 5}), "the Back well takes a backpack from the inventory, not an axe, a shoulder bag or a worn piece")
+	check(part.wells["shoulder:base"].can_drop.call({"slot": 8}) and not part.wells["head:base"].can_drop.call({"slot": 6}), "the Fibre - Backpack drops on the Shoulder well; a pack does not drop on Head")
 	check(back_well.drag_data.call() == null, "an empty Back well has nothing to drag")
 	back_well.on_drop.call({"slot": 6})
 	check(view.sent == [["wear", 6]], "dropping the backpack on the Back well puts it on (%s)" % str(view.sent))
-	var back_at: int = view.worn_places().find("back:base")
+	var back_at: int = places.find("back:base")
 	view.worn[back_at] = 11
 	view.inventory.numbers[6] = 0
-	part.refresh()
-	check(back_well.tooltip_text.contains("Simple - Backpack") and back_well.drag_data.call() == {"worn": back_at}, "the worn backpack shows in the Back well and drags out as its worn position (%s)" % str(back_well.drag_data.call()))
-	# The Fibre - Backpack is worn on the shoulder (Dave 24 Nov 2026: "call it a FiberBackpack"): with no pack on the back the Back well shows it,
-	# drags it out and takes it as a drop; with a pack on the back the pack wins.
-	var shoulder_at: int = view.worn_places().find("shoulder:base")
+	var shoulder_at: int = places.find("shoulder:base")
 	view.worn[shoulder_at] = 12
 	view.inventory.numbers[8] = 0
 	part.refresh()
-	check(back_well.tooltip_text.contains("Simple - Backpack") and back_well.drag_data.call() == {"worn": back_at}, "with a pack on the back too, the Back well still shows the pack (%s)" % back_well.tooltip_text)
-	view.worn[back_at] = 0
-	part.refresh()
-	check(back_well.tooltip_text.contains("Fibre - Backpack") and back_well.drag_data.call() == {"worn": shoulder_at}, "no pack on the back: the Back well shows the Fibre - Backpack and drags it out as its shoulder position (%s, %s)" % [back_well.tooltip_text, str(back_well.drag_data.call())])
-	view.worn[shoulder_at] = 0
-	view.inventory.numbers[8] = 12
-	view.sent.clear()
-	check(back_well.can_drop.call({"slot": 8}), "the Back well takes the Fibre - Backpack from the inventory")
-	back_well.on_drop.call({"slot": 8})
-	check(view.sent == [["wear", 8]], "dropping it there puts it on (%s)" % str(view.sent))
-	check(part.preview.render_target_update_mode == SubViewport.UPDATE_DISABLED, "the preview does not render while the window is shut")
-	part.set_active(true)
-	await process_frame
-	check(part.preview.render_target_update_mode != SubViewport.UPDATE_DISABLED, "it renders while the window is open")
-	# The character faces you when the inventory opens and a left drag turns it (Dave 25 Nov 2026).
-	check(is_equal_approx(part.rig.rotation.y, YouColumn.FACING_YOU), "the character faces forward when the inventory opens")
-	var drag: InputEventMouseMotion = InputEventMouseMotion.new()
-	drag.button_mask = MOUSE_BUTTON_MASK_LEFT
-	drag.relative = Vector2(100.0, 0.0)
-	part._on_figure_input(drag)
-	check(absf(part.rig.rotation.y - YouColumn.FACING_YOU - 100.0 * YouColumn.TURN_PER_PX) < 0.001, "a left drag of 100 px turns it (%.2f rad)" % part.rig.rotation.y)
-	var hover: InputEventMouseMotion = InputEventMouseMotion.new()
-	hover.relative = Vector2(100.0, 0.0)
-	part._on_figure_input(hover)
-	check(absf(part.rig.rotation.y - YouColumn.FACING_YOU - 100.0 * YouColumn.TURN_PER_PX) < 0.001, "moving the mouse without a button held does not turn it")
-	part.set_active(false)
-	part.set_active(true)
-	check(is_equal_approx(part.rig.rotation.y, YouColumn.FACING_YOU), "shut and opened again, it faces forward again")
-	check(built.get_combined_minimum_size().x <= ArtKit.YOU.size.x - 2.0 * ArtKit.INSET + 1.0, "gear and figure fit the You column's 408 px")
-	part.set_active(false)
-	await process_frame
-	check(part.preview.render_target_update_mode == SubViewport.UPDATE_DISABLED, "and stops when it shuts")
+	check(back_well.tooltip_text.contains("Simple - Backpack") and back_well.drag_data.call() == {"worn": back_at}, "the worn backpack shows in the Back well and drags out as its worn position (%s)" % str(back_well.drag_data.call()))
+	check(part.wells["shoulder:base"].tooltip_text.contains("Fibre - Backpack") and part.wells["shoulder:base"].drag_data.call() == {"worn": shoulder_at}, "the Fibre - Backpack shows in its own Shoulder well beside the pack")
+	check(part.wells["head:rigid"].drag_data.call() == {"worn": places.find("head:rigid")}, "any worn piece drags out as its worn position")
+	check(built.get_combined_minimum_size().x <= ArtKit.YOU.size.x - 2.0 * ArtKit.INSET + 1.0, "the wells fit the You column's 408 px (%d)" % int(built.get_combined_minimum_size().x))
 	built.queue_free()
 	await process_frame
 	print("you column: %d failures" % failures)

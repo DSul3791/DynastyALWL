@@ -35,6 +35,7 @@ GODOT = {   # rulings checked by behaviour, not data: the test that guards each
     "R-RES-BOULDER-PHYSICS": ["test_boulder_fall", "test_rock_fields"],
     "R-RES-BOULDER-HARM": ["test_boulder_fall"],
     "R-ANIMAL-ALLIGATOR": ["test_tail_drag"],
+    "R-HUD-INVENTORY-WORN": ["test_you_column"],
 }
 
 results = []   # (key, ok, what)
@@ -303,6 +304,16 @@ def alligator():
     check("R-ANIMAL-ALLIGATOR", walk <= 0.5, f"it crawls at a real alligator's pace ({walk} m/s, \"slow down his walk\")")
 
 
+def inventory_worn():
+    """R-HUD-INVENTORY-WORN: the inventory's You column has no character picture and a well for every worn position."""
+    code = (ROOT / "src/client/ui/inventory/you_column.gd").read_text(encoding="utf-8")
+    start = code.index("const GROUPS")
+    groups = code[start:code.index("\n]\n", start)]
+    missing = [p for p in data("data/items/clothing.json")["worn"] if f'"{p}"' not in groups]
+    check("R-HUD-INVENTORY-WORN", not missing, f"every worn position has a well (missing: {missing})")
+    check("R-HUD-INVENTORY-WORN", "SubViewport" not in code and "make_avatar" not in code, "no character picture in the inventory")
+
+
 def ruling_lines():
     out = {}
     for line in (ROOT / "docs/RULINGS.md").read_text(encoding="utf-8").splitlines():
@@ -317,7 +328,7 @@ def main():
              "R-STORE": names_and_storage, "R-CORE-NEWER-WINS": godot_guards, "R-HUD-PROMPTS": e_prompts,
              "R-FLORA-WITNESS-GLOW": witness_glow, "R-PLAYER-CRAWL": stealth, "R-HUNT-DEAD-NAME": dead_names, "R-HUNT-SIGN-SOUND": sign_sound, "R-CORE-PASS-OUT": pass_out,
              "R-ANIMAL-SEEN-FAR": seen_far, "R-MOVE-RUN-FEET": run_feet, "R-CRAFT-MAKING": campfire_both, "R-TEAM-LANE-C-DRIVE": lane_on_c, "R-ITEM-IRON-LOOK": iron_look,
-             "R-RES-BOULDER-PHYSICS": rocks_at_rest, "R-ANIMAL-ALLIGATOR": alligator}
+             "R-RES-BOULDER-PHYSICS": rocks_at_rest, "R-ANIMAL-ALLIGATOR": alligator, "R-HUD-INVENTORY-WORN": inventory_worn}
     for key, step in steps.items():
         try:
             step()

@@ -85,7 +85,7 @@ const GLYPH_FILE := {
 	"woodworking_table": "station_woodworking_table", "mark_chest": "mark_chest", "search": "glyph_search", "sort": "glyph_sort",
 }
 
-# The empty gear slots, in the order of the You column (left: head, body, outer, legs, feet; right: hands, back, waist, right hand, left hand).
+# The painted silhouettes of empty worn wells by body slot (you_column.gd GHOST_OF maps neck, shoulder and strap); "left" is not shown since 27 Nov 2026.
 const GEAR_GHOST := {
 	"head": "helmet", "body": "tunic", "outer": "cloak", "legs": "trousers", "feet": "boot",
 	"hands": "glove", "back": "pack", "waist": "belt", "right": "hand_axe", "left": "shield",
