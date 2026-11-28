@@ -19,7 +19,8 @@ const NODE_PREFIX := "Worn_Shell_"
 const TORSO := ["Spine", "Spine1", "Spine2", "RightShoulder", "LeftShoulder"]
 const REGIONS := {
 	"tunic": TORSO + ["RightArm", "LeftArm", "RightForeArm", "LeftForeArm"],
-	"padded": TORSO + ["RightArm", "LeftArm", "RightForeArm", "LeftForeArm"],
+	# The gambeson's layer is its chest (LAYER_IS_CHEST), so it runs down over the hips into its skirt (laptop pictures 28 Nov 2026: a band of bare waist between them).
+	"padded": TORSO + ["Hips", "RightArm", "LeftArm", "RightForeArm", "LeftForeArm"],
 	"mailshirt": TORSO + ["RightArm", "LeftArm"],
 }
 # The garment's own pieces on this body (worn_look.gd attach, fit_parts): Dave's back stands further out than the pieces were written for (the chest tube's back corner
@@ -343,9 +344,14 @@ static func _surface(surface: Dictionary, in_region: PackedByteArray, out_m: flo
 	k_bones.resize(n_kept * per)
 	k_weights.resize(n_kept * per)
 
+	# One push direction per place: the body's seams (UV and smoothing splits) are separate vertices at the same place with their own normals, and pushed out each
+	# its own way they opened cracks the skin showed through (laptop pictures 28 Nov 2026, the gambeson's 3 cm layer at the armpit and side).
+	var group_of: PackedInt32Array = _places(verts, kept)
+	var push: PackedVector3Array = _shared(normals, kept, group_of)
+
 	for i in range(n_kept):
 		var v: int = kept[i]
-		pos[i] = verts[v] + normals[v] * out_m
+		pos[i] = verts[v] + push[i] * out_m
 		nrm[i] = normals[v]
 		rest[i * 3] = verts[v].x
 		rest[i * 3 + 1] = verts[v].y
@@ -374,10 +380,11 @@ static func _surface(surface: Dictionary, in_region: PackedByteArray, out_m: flo
 		b_pos.resize(n_kept)
 		b_nrm.resize(n_kept)
 
+		var b_push: PackedVector3Array = _shared(b_normals if b_normals.size() == verts.size() else normals, kept, group_of)
+
 		for i in range(n_kept):
-			var n: Vector3 = b_normals[kept[i]] if b_normals.size() == verts.size() else normals[kept[i]]
-			b_pos[i] = b_verts[kept[i]] + n * out_m
-			b_nrm[i] = n
+			b_pos[i] = b_verts[kept[i]] + b_push[i] * out_m
+			b_nrm[i] = b_normals[kept[i]] if b_normals.size() == verts.size() else normals[kept[i]]
 
 		var one: Array = []
 		one.resize(Mesh.ARRAY_MAX)
@@ -391,6 +398,42 @@ static func _surface(surface: Dictionary, in_region: PackedByteArray, out_m: flo
 		flags |= Mesh.ARRAY_FLAG_USE_8_BONE_WEIGHTS
 
 	return {"surface": surface["surface"], "arrays": made, "blends": blends, "flags": flags, "vertices": kept}
+
+
+# Each kept vertex's place group: kept vertices at the same rest place (to 0.1 mm) share one group.
+static func _places(verts: PackedVector3Array, kept: PackedInt32Array) -> PackedInt32Array:
+	var groups: Dictionary = {}
+	var out: PackedInt32Array = PackedInt32Array()
+	out.resize(kept.size())
+
+	for i in range(kept.size()):
+		var key: Vector3i = Vector3i((verts[kept[i]] * 10000.0).round())
+
+		if not groups.has(key):
+			groups[key] = groups.size()
+
+		out[i] = int(groups[key])
+
+	return out
+
+
+# The normals of each place group averaged, one per kept vertex.
+static func _shared(normals: PackedVector3Array, kept: PackedInt32Array, group_of: PackedInt32Array) -> PackedVector3Array:
+	var sums: PackedVector3Array = PackedVector3Array()
+	var out: PackedVector3Array = PackedVector3Array()
+	out.resize(kept.size())
+
+	for i in range(kept.size()):
+		if group_of[i] >= sums.size():
+			sums.resize(group_of[i] + 1)
+
+		sums[group_of[i]] += normals[kept[i]]
+
+	for i in range(kept.size()):
+		var n: Vector3 = sums[group_of[i]]
+		out[i] = n.normalized() if n.length_squared() > 1e-12 else normals[kept[i]]
+
+	return out
 
 
 # Main thread: the ArrayMesh of one garment from its worked surfaces; null when it had none.
