@@ -1886,7 +1886,7 @@ func _screens() -> void:
 		await _check_pack("given")
 
 	# Each screen opens on its key and closes on Esc, and nothing is left open.
-	for id in ["inventory", "character", "journal", "goals", "map"]:
+	for id in ["inventory", "character", "journal", "goals", "skills", "map"]:
 		_step = "screen " + id
 		await _tap(id)
 		await _wait(1.0)

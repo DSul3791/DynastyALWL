@@ -1868,7 +1868,7 @@ func _log_slot() -> int:
 
 
 # --- clay, as the goal's hint says: the Wooden - Shovel in Dig mode, left clicks at the ground. Loam, forest humus, silt and alluvium
-# lie on clay (digging.json under: a 35 to 50% chance a dig), clay ground gives it every dig, sand and rock never. A dig is a bowl
+# lie on clay (digging.json under: a 70 to 90% chance a dig of 2 to 3), clay ground gives it every dig, sand and rock never. A dig is a bowl
 # about 1.7 m across and 1.15 m deep (server_items.gd DIG_RADIUS_M, DIG_DEPTH_M) and the shovel reaches 3 m from the eye (held_item.gd
 # REACH_M), so a player digs once where they stand, 1.8 m ahead, then steps 1.8 m sideways: the holes lie side by side and the robot
 # never stands in one. Lines go out from the camp a different way each time, further out, when the ground gives no clay.
