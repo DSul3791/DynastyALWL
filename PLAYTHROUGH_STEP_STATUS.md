@@ -72,7 +72,7 @@ Verified by running (headless server probes, headless real-client self-tests; **
 |---|---|---|---|
 | 1 | spawn, walk, run | WORKS, OPEN | smoke walk picture and arrival test fine; **about 15 s main-thread freeze at join** (watchdog, fps 1) | 
 | 2 | Tab bars | CLIENT | not driven; the vitals exist on the server |
-| 3 | drink at the water | CLIENT | server drink code present; the spawn pond shore (probe_spawn) is 31 m ground, water near; not driven in the client |
+| 3 | drink fresh water | CLIENT | server drink code present; the spawn pond shore (probe_spawn) is 31 m ground, water near; not driven in the client |
 | 4 | pick sticks and stones | WORKS | gather self-test ran (no crash); loose sticks and stones are laid thicker near the spawn (probe_spawn) |
 | 5 | nettles: fibre and nettle leaves | WORKS after Sal's branch | 49 nettles within 50 m; drop counts read from data (1-2 fibre, 2-4 nettles), not run |
 | 6 | twine (3 fibre -> 1) | WORKS | playability bot |

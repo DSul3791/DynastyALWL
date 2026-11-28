@@ -26,7 +26,7 @@ What a new player finds at the spawn ([historical probe_spawn_output.txt](https:
 
 1. Trigger: first frame. Line: "This is the pond shore. W A S D to walk, mouse to look. Hold Shift with W to run." Check: moved 5 m.
 2. Trigger: after step 1. Line: "Press Tab to see your bars: Health, Food, Water, Temperature, Energy. They all drain slowly. Press Tab again to close." Check: character screen opened once.
-3. Trigger: water in view, Water under 100 %. Line: "Walk to the water's edge and press E to drink." Check: one drink.
+3. Trigger: water in view, Water under 100 %. Line: "Drink fresh water from a river or lake: stand at its edge and press E." Check: one drink.
 
 ## Minute 3 to 8: sticks, stones, fibre
 
@@ -116,7 +116,7 @@ The goal list is the 13 starter goals of `data/items/starter_goals.json` in this
 
 | # | id | text on screen | after |
 |---|---|---|---|
-| 1 | drink | Drink at the water | |
+| 1 | drink | Drink fresh water | |
 | 2 | fibre | Gather plant fibre | |
 | 3 | twine | Twist twine | fibre |
 | 4 | axe | Make a stone axe | twine |

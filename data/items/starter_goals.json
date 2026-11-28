@@ -4,7 +4,7 @@
 		{
 			"id": "drink",
 			"title": "Drink fresh water",
-			"hint": "Find fresh water: a river, stream, lake or spring. Stand at its edge and press E to drink. Sea water is too salty to drink.",
+			"hint": "Drink fresh water from a river, stream, lake or spring: stand at its edge and press E. Sea water is too salty to drink.",
 			"after": [],
 			"check": {
 				"event": "drink",

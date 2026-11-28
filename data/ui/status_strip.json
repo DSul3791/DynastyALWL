@@ -43,7 +43,7 @@
 			"lines": {"1": "Food {n}%: you are low on food. Eat soon.",
 				"2": "Starving: your health stops coming back and your body weight falls. Eat something."}},
 		{"id": "thirst", "name": "Low on water", "glyph": "drop", "show_below": 10,
-			"lines": {"1": "Water {n}%: you are low on water. Drink soon.",
-				"2": "Parched: your health stops coming back. Drink something."}}
+			"lines": {"1": "Water {n}%: you are low on water. Drink fresh water soon.",
+				"2": "Parched: your health stops coming back. Drink fresh water."}}
 	]
 }
