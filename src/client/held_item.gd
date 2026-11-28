@@ -59,8 +59,6 @@ const SPEAR_GRIP_Z := 0.3
 const THIRD_LEAN_DEG := -17.0    # third person: head forward and 45 degrees down, as in first person (Dave 2026-10-25: first person hung down about 45 degrees but third person pointed up; the tool lies along the fingers there, the hand-mount's +Y is forward, so -17 turns the head forward and a little down; Dave: all held items point only slightly down)
 const HELD_HOE_ROLL_DEG := 60.0       # first person: the hoe is rolled about its haft so the blade shows instead of hiding edge-on
 const THIRD_ROD_PITCH_DEG := 22.0     # third person: a carried fishing rod points forward and up about 30 degrees (it lay horizontal and a little down at the default lean)
-const THIRD_SHOVEL_PITCH_DEG := -56.0   # third person: a carried shovel points its blade down, 40 degrees from vertical in the hand frame (about 30 as seen: review 2026-10-25 said 60 read steeper than 30)
-const THIRD_HOE_PITCH_DEG := -50.0     # third person: a hoe carried blade-down, haft about 50 degrees below horizontal (review 2026-10-25: it was nearly horizontal)
 const THIRD_SAW_PITCH_DEG := -120.0   # third person: a saw carried by the handle, blade pointing down and back about 30 degrees
 const THIRD_TORCH_RAISE_DEG := 35.0   # third person: a torch in the left hand points forward and 35 degrees up, its flame clear of the body (Dave 5 Nov: it lay along the arm by the hip)
 const THIRD_CHOKE := 0.6         # the hand takes the handle this share of the way from the middle to the end, so less of the tool stands above the hand
@@ -75,7 +73,13 @@ const THIRD_FULL_GRIP := ["saw"]   # held right on the grip point, no choke: a s
 const THIRD_HANG_FWD_DEG := 15.0
 const THIRD_OUT_DEG := 10.0
 const THIRD_HANG_DROP_M := 0.5
-const THIRD_HANG_CARRIES := ["axe", "hammer", "pick", "adze", "mace"]
+const THIRD_HANG_CARRIES := ["axe", "hammer", "pick", "adze", "mace", "shovel"]
+# A hoe (1.25 m) is carried upright like a staff along the open hand (copper hoe "misses the hand", parked 27 Nov, fixed 28 Nov): its haft lay 50 degrees below
+# horizontal, 31 degrees off the hand's line and 34 out of the palm's plane (shot_held --measure, laptop 28 Nov), so it crossed the hand at one point and showed
+# beside it; the hammer, 8 degrees off, reads as held. It now hangs on the hammer's line, the hand down the haft on its leather wrap so the blade's far end is
+# THIRD_STAFF_REACH_M from the hand (clear of the ground), the blade turned forward, away from the shins.
+const THIRD_STAFF_CARRIES := ["hoe"]
+const THIRD_STAFF_REACH_M := 0.7
 const THIRD_EDGE_CARRIES := ["knife", "chisel", "sword", "sickle"]
 const THIRD_SHAPE_CARRY := {"axe": "axe", "hammer": "hammer", "pick": "pick", "mace": "mace", "club": "mace", "bone": "mace", "sword": "sword", "knife": "knife", "sickle": "sickle"}
 # A tool with a stage-one look (data/items/looks.json) is held as the same mesh that lies on the ground (Dave 2026-10-24: the held tools
@@ -3756,16 +3760,15 @@ static func third_hold(model: Node3D, kind: String, carried: String) -> void:
 	var grip: Vector3 = Vector3(0.0, float(model.get_meta("grip_y", GRIP_ALONG_Y.get(kind, 0.0))) * third_choke(carried), 0.0)   # the hand sits grip below the model middle, on the handle end (Dave 2026-10-22: it was held by the head)
 	var reach: float = grip.y + float(model.get_meta("head_m", 0.0))   # hand to the head's far end
 
-	if carried in THIRD_HANG_CARRIES and model.has_meta("head_m"):
+	if carried in THIRD_STAFF_CARRIES and model.has_meta("head_m"):
+		grip.y = clampf(THIRD_STAFF_REACH_M - float(model.get_meta("head_m")), 0.03, grip.y / maxf(third_choke(carried), 0.01))   # on the haft, never past its grip end
+		turn = third_hang_turn(0.0) * Basis(Vector3.UP, PI)   # the blade (model -Z) turned to face forward
+	elif carried in THIRD_HANG_CARRIES and model.has_meta("head_m"):
 		turn = third_hang_turn(reach)
 	elif carried in THIRD_HANG_CARRIES or carried in THIRD_EDGE_CARRIES:
 		turn = Basis(Vector3.BACK, deg_to_rad(-THIRD_OUT_DEG)) * turn   # about the mount's up axis: the head turns out to +X
 
-	if carried == "shovel":
-		turn = Basis(Vector3.RIGHT, deg_to_rad(THIRD_SHOVEL_PITCH_DEG))
-	elif carried == "hoe":
-		turn = Basis(Vector3.RIGHT, deg_to_rad(THIRD_HOE_PITCH_DEG))
-	elif carried == "saw":
+	if carried == "saw":
 		turn = Basis(Vector3.RIGHT, deg_to_rad(THIRD_SAW_PITCH_DEG))
 	elif carried == "rod":
 		turn = Basis(Vector3.RIGHT, deg_to_rad(THIRD_ROD_PITCH_DEG))

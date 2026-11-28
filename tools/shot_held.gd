@@ -173,4 +173,11 @@ func _measure(avatar: Node3D, mount: Node3D, model: Node3D, item: String) -> voi
 	var along: Vector3 = (to_mount * (mount.global_position - bone.origin)).normalized()
 	var shaft: Vector3 = (model.basis * Vector3.UP).normalized()
 	var out_deg: float = rad_to_deg(asin(clampf(absf(shaft.dot(palm)), 0.0, 1.0)))
-	print("shot held: measure %s palm %s hand %s handle %s out of palm plane %.0f deg, to the hand line %.0f deg" % [item, str(palm), str(along), str(shaft), out_deg, rad_to_deg(shaft.angle_to(along))])
+	var lowest: float = INF
+
+	for child in model.find_children("*", "MeshInstance3D", true, false):
+		var drawn: MeshInstance3D = child as MeshInstance3D
+		var box: AABB = drawn.global_transform * drawn.get_aabb()
+		lowest = minf(lowest, box.position.y)
+
+	print("shot held: measure %s palm %s hand %s handle %s out of palm plane %.0f deg, to the hand line %.0f deg; hand %.2f m up, tool's lowest point %.2f m up" % [item, str(palm), str(along), str(shaft), out_deg, rad_to_deg(shaft.angle_to(along)), mount.global_position.y - avatar.global_position.y, lowest - avatar.global_position.y])
