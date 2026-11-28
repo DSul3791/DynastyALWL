@@ -315,6 +315,14 @@ def inventory_worn():
     check("R-HUD-INVENTORY-WORN", "SubViewport" not in code and "make_avatar" not in code, "no character picture in the inventory")
 
 
+def drink_fresh():
+    """R-WATER-DRINK-FRESH: the player is told to "drink fresh water", not "drink at the water"."""
+    goal = next(g for g in data("data/items/starter_goals.json")["goals"] if g["id"] == "drink")
+    hint = next(h for h in data("data/items/hints.json")["hints"] if h["id"] == "drink")
+    words = [goal["title"], goal["hint"], hint["text"]]
+    check("R-WATER-DRINK-FRESH", all("drink fresh water" in w.lower() for w in words), f"the drink goal and hints say drink fresh water ({words})")
+
+
 def ruling_lines():
     out = {}
     for line in (ROOT / "docs/RULINGS.md").read_text(encoding="utf-8").splitlines():
@@ -329,7 +337,7 @@ def main():
              "R-STORE": names_and_storage, "R-CORE-NEWER-WINS": godot_guards, "R-HUD-PROMPTS": e_prompts,
              "R-FLORA-WITNESS-GLOW": witness_glow, "R-PLAYER-CRAWL": stealth, "R-HUNT-DEAD-NAME": dead_names, "R-HUNT-SIGN-SOUND": sign_sound, "R-CORE-PASS-OUT": pass_out,
              "R-ANIMAL-SEEN-FAR": seen_far, "R-MOVE-RUN-FEET": run_feet, "R-CRAFT-MAKING": campfire_both, "R-TEAM-LANE-C-DRIVE": lane_on_c, "R-ITEM-IRON-LOOK": iron_look,
-             "R-RES-BOULDER-PHYSICS": rocks_at_rest, "R-ANIMAL-ALLIGATOR": alligator, "R-HUD-INVENTORY-WORN": inventory_worn}
+             "R-RES-BOULDER-PHYSICS": rocks_at_rest, "R-ANIMAL-ALLIGATOR": alligator, "R-HUD-INVENTORY-WORN": inventory_worn, "R-WATER-DRINK-FRESH": drink_fresh}
     for key, step in steps.items():
         try:
             step()
