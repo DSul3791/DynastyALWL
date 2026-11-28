@@ -1,6 +1,7 @@
 {
 	"note": "Old rules Dave replaced. Each phrase must not appear in an active file (tools/check_rulings.py): when a ruling in docs/RULINGS.md replaces an older one, add the older rule's telltale phrase here and remove it from every active file in the same PR. Lower case; matched without case.",
 	"retired": [
+		{"phrase": "bought models never go in the repo", "replaced_by": "R-REPO-PUBLIC", "since": "2026-11-28"},
 		{"phrase": "live character model wearing what is equipped", "replaced_by": "R-HUD-INVENTORY-WORN", "since": "2026-11-27"},
 		{"phrase": "freeze all discretionary additions", "replaced_by": "R-ITEM-CATALOG", "since": "2026-11-26"},
 		{"phrase": "eye almost at the ground, no movement", "replaced_by": "R-PLAYER-CRAWL", "since": "2026-11-25"},
