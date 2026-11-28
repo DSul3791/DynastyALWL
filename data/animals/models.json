@@ -2590,7 +2590,7 @@
 				"tail_07",
 				"tail_08"
 			],
-			"note": "Dave's Alligator_Al.glb (27 Nov 2026): its clips are borrowed from cats, a dog, a fox and a leopard. Dave: \"ignore the dog walk its terrible\", so Walking is never used: walk is cat_walk, the run and charge the dog's Running, the bite the leopard's pounce (feipu), the strike its tail swipe (shuaiwei), the death leopard_dead; stand, alert and warn the fox idle (cat_idle2 is 3.04 times its flat rest height, over TALL_SHARE, so only an idle variant if ever). The lie is its own rest pose, belly and tail flat (gait 19 rest_all; the cat sleep curled it into a ball, Lane A 27 Nov). No swim or hit clip: in water it plays its state's clip. tail_drag (src/client/tail_drag.gd) lays the tail on the ground over every clip (Dave: \"all the actions need to let the tail drag on the ground\"). crawl (src/client/crawl.gd) lets the body down level to its rest height and bends the legs out to the sides with the feet where the clip put them, in the idle, walk, bite and strike (Dave 27 Nov: \"bend his legs more like a real alligator and slow down his walk so he crawls\"; the run stays a high walk); the server walks it at 0.4 m/s (animals.json), cat_walk's feet move 0.47 m/s. ground_m and ground_clips come from skinning the file off line with the tail laid down and the body let down (thread, 27 Nov): tools/ground_check.gd poses the raw clips, whose cat and fox tails dip through the ground, so its lowest points for this model are the tail's, not the feet's.",
+			"note": "Dave's Alligator_Al.glb (27 Nov 2026): its clips are borrowed from cats, a dog, a fox and a leopard. Dave: \"ignore the dog walk its terrible\", so Walking is never used: walk is cat_walk, the run and charge the dog's Running, the bite the leopard's pounce (feipu), the strike its tail swipe (shuaiwei), the death leopard_dead; stand, alert and warn the fox idle (cat_idle2 is 3.04 times its flat rest height, over TALL_SHARE, so only an idle variant if ever). The lie is its own rest pose, belly and tail flat (gait 19 rest_all; the cat sleep curled it into a ball, Lane A 27 Nov). No swim or hit clip: in water it plays its state's clip. tail_drag (src/client/tail_drag.gd) lays the tail on the ground over every clip (Dave: \"all the actions need to let the tail drag on the ground\"). crawl (src/client/crawl.gd) lets the body down level to its rest height and bends the legs out to the sides with the feet where the clip put them, in the idle, walk, bite and strike (Dave 27 Nov: \"bend his legs more like a real alligator and slow down his walk so he crawls\"; the run stays a high walk); the bite and strike (flat) also lay the spine from the hips to the head at its rest slope and keep the feet on the ground (28 Nov: the leopard's pounce and tail swipe hunched it like a cat); the server walks it at 0.4 m/s (animals.json), cat_walk's feet move 0.47 m/s. ground_m and ground_clips come from skinning the file off line with the tail laid down and the body let down (thread, 27 Nov): tools/ground_check.gd poses the raw clips, whose cat and fox tails dip through the ground, so its lowest points for this model are the tail's, not the feet's.",
 			"length_m": 3.8,
 			"flat_share": 0.3,
 			"ground_m": -0.07,
@@ -2648,6 +2648,20 @@
 					"cat_walk",
 					"leopard_skill_feipu_once",
 					"leopard_skill_shuaiwei_once"
+				],
+				"flat": [
+					"leopard_skill_feipu_once",
+					"leopard_skill_shuaiwei_once"
+				],
+				"spine": [
+					"hips",
+					"spine2",
+					"spine_03",
+					"chest",
+					"neck_01",
+					"neck1",
+					"neck2",
+					"head"
 				]
 			}
 		}

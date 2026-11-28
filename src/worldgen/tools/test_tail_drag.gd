@@ -4,7 +4,7 @@ extends SceneTree
 # the ground"): a tail a clip holds up is laid back on the floor joint by joint, keeps the clip's sideways swing, and follows a body
 # the clip lowers below its rest floor. The crawl (crawl.gd; Dave 27 Nov: "bend his legs more like a real alligator ... so he crawls"):
 # a body a clip holds tall and tilted is levelled and let down to its rest height, never raised, the feet staying where the clip put them
-# with the elbows bent out; off in other clips and when the body is rolled onto its side.
+# with the elbows bent out; off in other clips and when the body is rolled onto its side; the attacks laid flatter, feet on the ground.
 #   godot --headless --path . --script res://src/worldgen/tools/test_tail_drag.gd
 
 const TailDrag := preload("res://src/client/tail_drag.gd")
@@ -119,6 +119,31 @@ func _initialize() -> void:
 	body.set_bone_pose_position(top, Vector3(0.0, 0.1, 0.0))
 	crawl.apply(body)
 	check(body.get_bone_pose_position(top).is_equal_approx(Vector3(0.0, 0.1, 0.0)) and body.get_bone_pose_rotation(top).is_equal_approx(rolled), "a body on its side keeps the clip's pose")
+
+	# An attack laid flat (spec "flat", "spine"; Dave 28 Nov: the bite and tail swipe "still hunch like a cat"): a leap 0.2 up, turned 40
+	# degrees to the side and the back arched 30 degrees (the head thrown up) is let down with the back flat at its rest slope, the head as low
+	# as at rest, the clip's sideways turn kept and the feet on the ground.
+	var neck: int = _bone(body, "neck", front, Vector3(0.0, 0.05, 0.2))
+	var attack = Crawl.new()
+	var flat_spec: Dictionary = spec.duplicate(true)
+	flat_spec["flat"] = ["leopard_skill_feipu_once"]
+	flat_spec["spine"] = ["hips", "chest", "neck"]
+	check(attack.setup(body, flat_spec).is_empty() and attack.spine.size() == 3 and attack.flat("Armature|leopard_skill_feipu_once") and not attack.flat("cat_walk"), "the spine is found, only the named attacks are laid flat")
+	body.reset_bone_poses()
+	var side: Basis = Basis(Vector3.UP, deg_to_rad(40.0))
+	body.set_bone_pose_position(top, Vector3(0.0, 0.2, 0.0))
+	body.set_bone_pose_rotation(top, side.get_rotation_quaternion())
+	body.set_bone_pose_rotation(mid, Quaternion(Vector3.RIGHT, deg_to_rad(-30.0)))
+	attack.flat_now = true
+	attack.apply(body)
+	var h_at: Vector3 = TailDrag.global_of(body, mid).origin
+	var c_at: Vector3 = TailDrag.global_of(body, front).origin
+	var n_at: Vector3 = TailDrag.global_of(body, neck).origin
+	check(absf(h_at.y - 0.3) < 0.002 and absf(c_at.y - 0.3) < 0.002 and absf(n_at.y - 0.35) < 0.002, "the back flat and the head low (hips %.3f, chest %.3f, head %.3f)" % [h_at.y, c_at.y, n_at.y])
+	var heading: Vector3 = Vector3(c_at.x - h_at.x, 0.0, c_at.z - h_at.z).normalized()
+	check(heading.distance_to(side * Vector3.BACK) < 0.01, "the clip's sideways turn is kept")
+	check(absf(TailDrag.global_of(body, foot_l).origin.y) < 0.01 and absf(TailDrag.global_of(body, foot_r).origin.y) < 0.01, "the feet on the ground (%.3f, %.3f)" % [TailDrag.global_of(body, foot_l).origin.y, TailDrag.global_of(body, foot_r).origin.y])
+	attack.free()
 
 	var lame = Crawl.new()
 	check(lame.setup(body, {"hips": "hips", "chest": "chest", "legs": [["upr.L", "nope", "foot.L"]]}) == PackedStringArray(["nope"]) and lame.hips == -1, "a bone the skeleton lacks is named, and the crawl is off")
