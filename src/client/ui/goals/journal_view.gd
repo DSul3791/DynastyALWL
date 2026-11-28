@@ -2,8 +2,9 @@ extends RefCounted
 
 # The Journal (docs/design/PLAYER_JOURNAL_GOALS_UI.md decisions 1, 2, 4, 5 and 6; GA-87): one window in the Inventory/Crafting look (the same backdrop,
 # leather panels, brass title plates, raised rows and fonts, art_kit.gd), with four pages: the Index (its home, a table of contents), Goals, Skills and Map.
-# J opens the Index, G opens Goals, M opens Map; in the Journal J goes back to the Index and, from the Index, closes it; Esc closes. The Index entries
-# are buttons that go to the same pages. One window: a page change swaps the panels' contents, never opens a second window.
+# J opens the Index, G opens Goals, O opens Skills, M opens Map; in the Journal J goes back to the Index and, from the Index, closes it; Esc closes.
+# Dave 28 Nov 2026 (R-HUD-JOURNAL-BOOK): a book with pages: a row of tabs across the top, one per page with its key, the open page's tab gold-edged,
+# and turn-the-page buttons at each end. The Index entries go to the same pages. One window: a page change swaps the panels' contents.
 # Goals: every goal in the authored order, done and not done, in a scrolling list; selecting one shows its how-to, its reward (coins as the purse shows
 # them) and its prerequisites as links ("Learn first", from the goal's `after`) and what it leads to. Selecting or following a link changes only what
 # is shown: goals track and pay on the server whether or not they are looked at (decision 4). Back steps through the goals looked at.
@@ -12,7 +13,7 @@ extends RefCounted
 # Skills (Dave 23 Nov 2026): a table of every skill, Name, Skill level and Class (Basic 1-24, Advanced 25-49, Expert 50-74, Master 75-100), in
 # alphabetical order at first; clicking a heading sorts by it, again the other way (skill_table.gd). The table scrolls. Selecting a row shows
 # that skill on the right: its level and cap, what it needs next (training, with who teaches it, or the skill that opens it) and the four classes.
-# It has no key of its own: the Index opens it.
+# O (or its tab, or the Index) opens it.
 
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
 const MapPageScript := preload("res://src/client/map_page.gd")
@@ -24,9 +25,12 @@ const INDEX := "index"
 const GOALS := "goals"
 const SKILLS := "skills"
 const MAP := "map"
-const LEFT := Rect2(24, 24, 690, 908)                  # the Pack panel's place and size
-const RIGHT := Rect2(736, 24, 1160, 908)               # the You and Craft panels' span
-const WHOLE := Rect2(24, 24, 1872, 908)                # the Map page: one panel
+const LEFT := Rect2(24, 84, 690, 848)                  # the Pack panel's x and width, under the tab row; all end at y 932 over the hotbar
+const RIGHT := Rect2(736, 84, 1160, 848)               # the You and Craft panels' span
+const WHOLE := Rect2(24, 84, 1872, 848)                # the Map page: one panel
+const TABS := Rect2(24, 18, 1872, 56)                  # the book's tabs and page-turn buttons
+const PAGES := [INDEX, GOALS, SKILLS, MAP]             # the book's page order, for the tabs and turning
+const TAB_NAMES := {INDEX: ["Contents", "journal"], GOALS: ["Goals", "goals"], SKILLS: ["Skills", "skills"], MAP: ["Map", "map"]}
 const TOP := 68.0                                       # under the title plate, as InventoryFrame.TOP
 
 var open: bool = false
@@ -42,6 +46,7 @@ var _frame: JournalFrame
 var _left: VBoxContainer
 var _right: VBoxContainer
 var _whole: VBoxContainer
+var _tabs: HBoxContainer
 var _list_scroll: ScrollContainer
 var map_knowledge = null                                # MapKnowledge (terrain_client.gd sets it): what this character has surveyed
 var _map_page: MapPageScript                            # made at the first look and kept
@@ -62,7 +67,7 @@ class JournalFrame extends Control:
 
 		for p in panels:
 			ArtKit.draw_panel(self, p[0])
-			ArtKit.draw_title_plate(self, (p[0] as Rect2).position.x + 48.0, 30.0, str(p[1]), false, (p[0] as Rect2).size.x - 96.0)
+			ArtKit.draw_title_plate(self, (p[0] as Rect2).position.x + 48.0, (p[0] as Rect2).position.y + 6.0, str(p[1]), false, (p[0] as Rect2).size.x - 96.0)
 
 
 func setup(items, layer: CanvasLayer, book) -> void:
@@ -82,7 +87,7 @@ func press_journal() -> void:
 		show_page(INDEX)
 
 
-# G and M (and the Index buttons): that page, opening the Journal if it is shut.
+# G, O and M (and the tabs and Index buttons): that page, opening the Journal if it is shut.
 func show_page(which: String) -> void:
 	page = which
 
@@ -154,6 +159,12 @@ func _build() -> void:
 	_left = _column(LEFT)
 	_right = _column(RIGHT)
 	_whole = _column(WHOLE)
+	_tabs = HBoxContainer.new()
+	_tabs.position = TABS.position
+	_tabs.size = TABS.size
+	_tabs.alignment = BoxContainer.ALIGNMENT_CENTER
+	_tabs.add_theme_constant_override("separation", 12)
+	_root.add_child(_tabs)
 	_layer.add_child(_root)
 
 
@@ -173,7 +184,7 @@ func _show() -> void:
 	var kept_scroll: int = _skill_scroll.scroll_vertical if page == SKILLS and _skill_scroll != null and is_instance_valid(_skill_scroll) else -1
 	_skill_scroll = null
 
-	for column in [_left, _right, _whole]:
+	for column in [_left, _right, _whole, _tabs]:
 		for child in column.get_children():
 			column.remove_child(child)
 
@@ -198,6 +209,8 @@ func _show() -> void:
 	else:
 		_frame.panels = [[LEFT, "JOURNAL"], [RIGHT, "INDEX"]]
 		_show_index()
+
+	_show_tabs()
 
 	if kept_scroll > 0 and _skill_scroll != null:   # a refresh (the server's skills message) keeps the place in the table
 		var scroll: ScrollContainer = _skill_scroll
@@ -284,17 +297,47 @@ func _link(text: String, on_press: Callable) -> Button:
 
 # ------------------------------------------------------------------------------------------------ pages
 
+# The tab row: "<" turns back a page, a tab per page with the player's own key (the open one gold-edged), ">" turns on; no turning past either end.
+func turn(step: int) -> void:
+	var at: int = clampi(PAGES.find(page) + step, 0, PAGES.size() - 1)
+
+	if PAGES[at] != page:
+		show_page(PAGES[at])
+
+
+func _show_tabs() -> void:
+	var at: int = PAGES.find(page)
+	_tabs.add_child(_tab("<  Page back", false, at > 0, func() -> void: turn(-1)))
+
+	for which in PAGES:
+		var named: Array = TAB_NAMES[which]
+		_tabs.add_child(_tab("%s   %s" % [named[0], KeyBindings.label(str(named[1]))], which == page, true, func() -> void: show_page(which)))
+
+	_tabs.add_child(_tab("Page on  >", false, at < PAGES.size() - 1, func() -> void: turn(1)))
+
+
+func _tab(text: String, chosen: bool, can: bool, on_press: Callable) -> Button:
+	var tab: Button = _row(text, chosen, can or chosen, null, on_press)
+	tab.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tab.clip_text = false
+	tab.disabled = not can
+	tab.add_theme_stylebox_override("disabled", tab.get_theme_stylebox("normal"))   # a dim end button in the book's look, not the engine's grey
+	tab.add_theme_color_override("font_disabled_color", ArtKit.DIM)
+	tab.custom_minimum_size = Vector2(220.0, 48.0)
+	return tab
+
+
 func _show_index() -> void:
 	_left.add_child(_section("Contents"))
 
-	for entry in [[GOALS, "Goals", KeyBindings.label("goals")], [SKILLS, "Skills", ""], [MAP, "Map", KeyBindings.label("map")]]:
+	for entry in [[GOALS, "Goals", KeyBindings.label("goals")], [SKILLS, "Skills", KeyBindings.label("skills")], [MAP, "Map", KeyBindings.label("map")]]:
 		var which: String = entry[0]
 		_left.add_child(_row(("%s      %s" % [entry[1], entry[2]]).strip_edges(), false, true, null, func() -> void: show_page(which)))
 
 	var filler: Control = Control.new()
 	filler.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_left.add_child(filler)
-	_left.add_child(_text(_keys_line([["journal", "Index"], ["goals", "Goals"], ["map", "Map"]]), 18, ArtKit.DIM))
+	_left.add_child(_text(_keys_line([["journal", "Index"], ["goals", "Goals"], ["skills", "Skills"], ["map", "Map"]]), 18, ArtKit.DIM))
 	_right.add_child(_section("Goals"))
 	var total: int = _book.rows.size()
 	_right.add_child(_text("%d of %d goals done." % [_book.done_count(), total] if total > 0 else "No goals have arrived yet.", 24, ArtKit.CREAM))

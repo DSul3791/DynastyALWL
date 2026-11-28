@@ -20,6 +20,7 @@ GODOT = {   # rulings checked by behaviour, not data: the test that guards each
     "R-CORE-COLD": ["test_cold_pass_out"],
     "R-HUD-STATUS": ["test_status_strip"],
     "R-HUD-INSPECT-PLUS": ["test_inspect_reticle"],
+    "R-HUD-JOURNAL-BOOK": ["test_goal_ui"],
     "R-CTRL-E-CLOSEST": ["test_e_priority"],
     "R-CRAFT-KEPT-TOOL": ["test_server_items"],
     "R-CRAFT-SMALL-BY-HAND": ["test_campfire_both"],
