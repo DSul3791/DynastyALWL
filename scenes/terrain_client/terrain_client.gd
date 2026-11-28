@@ -5847,7 +5847,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		_scroll_view(event.button_index == MOUSE_BUTTON_WHEEL_DOWN)
 	elif event is InputEventMouseButton and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and held != null and held.mouse_button(event.button_index, event.pressed):
 		pass
-	elif event is InputEventMouseButton and event.pressed:
+	elif event is InputEventMouseButton and event.pressed and not (hint_card != null and hint_card.showing != ""):   # a click beside the hint card's OK keeps the mouse free for it
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if shot_lock else Input.MOUSE_MODE_CAPTURED
 	elif event is InputEventKey and KeyBindings.released(event, "interact") and items != null:
 		items.release_e()
