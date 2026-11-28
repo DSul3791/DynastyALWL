@@ -10475,7 +10475,7 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	_lay_out_ore_rocks(cell, cell_m, "meteorite", reads)
 	_lay_out_sources(cell, cell_m, reads)
 	_lay_out_seams(cell, cell_m, reads)
-	_lay_out_pockets(cell, cell_m)
+	_lay_out_pockets(cell, cell_m, reads)
 	part_usec = _cell_part("copper, tin and iron rocks and meteorites", part_usec)
 	_lay_out_rock_fields(cell, cell_m, reads)
 	_cell_part("rocky ground", part_usec)
@@ -11722,10 +11722,27 @@ func _open_pockets(peer: int, at: Vector3, radius: float) -> void:
 				(_scatter_cells[cell] as Array).append(rock_id)   # taken away with its cell
 
 
-# The opened pockets whose rock lies in this cell.
-func _lay_out_pockets(cell: Vector2i, cell_m: float) -> void:
+# The opened pockets whose rock lies in this cell. A vein's shown pockets (its outcrops) in the cell open here first, on the ground with
+# no dig (saved like a dug one, so a broken outcrop stays broken).
+func _lay_out_pockets(cell: Vector2i, cell_m: float, reads: Dictionary = {}) -> void:
 	if resource_context == null:
 		return
+
+	if reads.has("ground"):
+		var ground: Callable = reads["ground"]
+		var rows: Array = resource_context.get("pockets")
+
+		for n in resource_context.call("pockets_near", (float(cell.x) + 0.5) * cell_m, (float(cell.y) + 0.5) * cell_m, cell_m):
+			var p: Dictionary = rows[n]
+
+			if not p.has("show") or _pockets_open.has(int(p["id"])) or floori(float(p["x"]) / cell_m) != cell.x or floori(float(p["z"]) / cell_m) != cell.y:
+				continue
+
+			var y: float = float(ground.call(float(p["x"]), float(p["z"])))
+
+			if not is_nan(y):
+				_pockets_open[int(p["id"])] = [float(p["x"]), y, float(p["z"])]
+				_dirty = true
 
 	for id in _pockets_open:
 		var spot: Array = _pockets_open[id]
@@ -11740,12 +11757,12 @@ func _lay_out_pockets(cell: Vector2i, cell_m: float) -> void:
 # A pocket's rock (distribution pocket_rock): small, its stones and the grade of its find; what is left of it keeps under its key.
 func _place_pocket(id: int, p: Dictionary) -> void:
 	var cfg: Dictionary = (_boulder_cfg.get("distribution", {}) as Dictionary).get("pocket_rock", {})
-	var radii: Array = cfg.get("radius_m", [0.3, 0.45])
-	var stones: Array = cfg.get("stones", [6, 12])
+	var radii: Array = cfg.get("outcrop_radius_m" if p.has("show") else "radius_m", [0.3, 0.45])
+	var stones: Array = cfg.get("outcrop_stones" if p.has("show") else "stones", [6, 12])
 	var key: int = POCKET_KEY | id
 	var u: float = ResourceContextScript.unit(id, 1)
 	var row: Dictionary = {"radius": lerpf(float(radii[0]), float(radii[1]), u), "yaw": u * 360.0, "ang": 0.8, "ore": str(p["find"]),
-		"grade": float((cfg.get("grade", {}) as Dictionary).get(str(p["find"]), 0.3)), "pocket": id}
+		"grade": float((cfg.get("grade", {}) as Dictionary).get(str(p["find"]), 0.3)) * (float(cfg.get("outcrop_grade", 0.3)) if p.has("show") else 1.0), "pocket": id}
 	row["total"] = int(round(lerpf(float(stones[0]), float(stones[1]), ResourceContextScript.unit(id, 2))))
 	if _boulder_pending.has(key):   # saved at other stone rates: a pocket rock's total is a fixed count, not a rate, so it is kept as saved
 		_boulder_left[key] = int(_boulder_pending[key][0])

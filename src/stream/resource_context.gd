@@ -27,6 +27,8 @@ extends RefCounted
 #   its own says so (not every such slope); rivers count, since streams cut down through coal beds and show them in their banks. Seams: in a district, a coal layer at one height running along the hillside (along the contour)
 #   for 60 to 200 m and back into the hill; the server works out its height from the real ground at its centre, lays dark outcrops where it
 #   shows and gives coal to a shovel that digs inside its band, so a player can follow it into the hill.
+# - veins: gold and silver veins from the deeper iron and tin sources, far apart, uphill under the mountain, as rows of pockets (the first
+#   shown on the ground), gems deeper down by chance (boulders.json distribution veins, R-RES-PRECIOUS).
 # - pockets: per source, a small chance of each find in the association table (boulders.json distribution pockets: which sources, how far
 #   inland, near the source or down its river gravels, how deep); most sources have none. Deterministic from the source's id; the server
 #   reveals one when a dig reaches it.
@@ -59,7 +61,7 @@ var receiver: PackedInt32Array = PackedInt32Array()
 var drain: PackedFloat32Array = PackedFloat32Array()
 var deposits: Array = []          # {"metal", "x", "z", "size" 0..1, "radius" m, "id" int, "assured" bool}
 var seams: Array = []             # {"id", "x", "z", "along" Vector2 (the contour), "up" Vector2 (into the hill), "length" m, "thick" m, "into" m, "out" m}
-var pockets: Array = []           # {"id", "find", "x", "z", "depth" m under the generated ground, "r" m, "source" deposit id}
+var pockets: Array = []           # {"id", "find", "x", "z", "depth" m under the generated ground, "r" m, "source" deposit id; a vein's: "vein" id, "show" on the ground}
 var dangers: Array = []           # [x, z, radius m] of known dangers (hostile camps, bandit camps) the starting-island routes keep out of; set before building
 var first_bronze: Dictionary = {}   # copper and tin ore the starting island's sources must hold within their route budgets (supply_inputs; set before building)
 var ore_per_m3: float = 0.0       # stones a cubic metre of ore rock holds (the server's boulder rule; supply_inputs); 0 skips the quantity check
@@ -1106,12 +1108,14 @@ func _look_lines() -> void:
 	for p in pockets:
 		var route: float = float(dist.call(float(p["x"]), float(p["z"])))
 
-		if is_finite(route) and (not by_find.has(p["find"]) or route < float(by_find[p["find"]][0])):
-			by_find[p["find"]] = [route, p]
+		var kind: String = str(p["find"]) + (" vein outcrop" if p.has("show") else " vein" if p.has("vein") else " pocket")
+
+		if is_finite(route) and (not by_find.has(kind) or route < float(by_find[kind][0])):
+			by_find[kind] = [route, p]
 
 	for f in by_find:
 		var found: Dictionary = by_find[f][1]
-		report.append("resources: look %s pocket at %.1f, %.1f, %.1f m down, %.0f m by route" % [str(f), float(found["x"]), float(found["z"]), float(found["depth"]), float(by_find[f][0])])
+		report.append("resources: look %s at %.1f, %.1f, %.1f m down, %.0f m by route" % [str(f), float(found["x"]), float(found["z"]), float(found["depth"]), float(by_find[f][0])])
 
 	_spawn_cost = PackedFloat32Array()   # only the look lines read it
 
@@ -1375,9 +1379,110 @@ func _pockets() -> void:
 					"r": float(row.get("r_m", 1.5)), "source": id})
 				_bin_add(_pocket_bins, at.x, at.y, pockets.size() - 1)
 
+	_veins()
 	var by_find: Dictionary = {}
 
 	for p in pockets:
 		by_find[p["find"]] = int(by_find.get(p["find"], 0)) + 1
 
 	report.append("resources: %d pockets %s" % [pockets.size(), str(by_find)])
+
+
+# Gold and silver veins (distribution veins, R-RES-PRECIOUS, Dave 27 Nov 2026: "in veins along side the deeper iron, tin veins under the
+# mountains or up in the mountains ... spread so as to entice the players to travel"). An iron or tin source at journey_min or farther in
+# starts one with chance x (0.5 + its size), unless another vein starts within gap_m (so they lie far apart). It runs uphill from the
+# source's edge, under the mountain, for length_m: a row of pockets every step_m, the first outcrop_points shown on the ground ("show":
+# the server lays them as rocks with no dig), the rest buried ever deeper (depth_m along it). Under each buried pocket a gem lies a
+# little deeper with chance gem_per_m x its depth: the deeper the dig, the likelier a gem (gems: kind by journey).
+func _veins() -> void:
+	var cfg: Dictionary = _cfg.get("veins", {})
+
+	if cfg.is_empty():
+		return
+
+	var starts: Array = []
+	var metals: Array = cfg.get("metals", ["iron", "tin"])
+	var finds: Array = cfg.get("finds", [["silver", 0.55], ["gold", 0.45]])
+	var lengths: Array = cfg.get("length_m", [120.0, 300.0])
+	var depths: Array = cfg.get("depth_m", [0.6, 3.5])
+	var step: float = maxf(float(cfg.get("step_m", 10.0)), 2.0)
+	var shown: int = int(cfg.get("outcrop_points", 3))
+	var gap: float = float(cfg.get("gap_m", 1500.0))
+
+	for d in deposits:
+		var c: int = cell_at(float(d["x"]), float(d["z"]))
+
+		if not metals.has(str(d["metal"])) or c < 0 or journey[c] < float(cfg.get("journey_min", 0.5)):
+			continue
+
+		var id: int = int(d["id"])
+		var salt: int = _hash(id, 0x7e1a)
+
+		if unit(salt, 1) >= float(cfg.get("chance", 0.3)) * (0.5 + float(d["size"])):
+			continue
+
+		var from: Vector2 = Vector2(float(d["x"]), float(d["z"]))
+		var near: bool = false
+
+		for s in starts:
+			near = near or from.distance_to(s) < gap
+
+		if near:
+			continue
+
+		starts.append(from)
+		var up: Vector2 = _uphill(from.x, from.y)
+		up = up if up != Vector2.ZERO else Vector2(1.0, 0.0).rotated(unit(salt, 2) * TAU)
+		var pick: float = unit(salt, 3)
+		var find: String = str(finds[finds.size() - 1][0])
+
+		for f in finds:
+			pick -= float(f[1])
+
+			if pick < 0.0:
+				find = str(f[0])
+				break
+
+		var length: float = lerpf(float(lengths[0]), float(lengths[1]), unit(salt, 4))
+		var points: int = maxi(int(length / step), shown + 1)
+		var head: Vector2 = from + up * float(d["radius"])
+
+		for i in points:
+			var t: float = float(i - shown) / float(maxi(points - shown - 1, 1))
+			var at: Vector2 = head + up * (float(i) * step) + up.orthogonal() * (unit(salt, 10 + i) - 0.5) * 3.0
+			var depth: float = 0.0 if i < shown else lerpf(float(depths[0]), float(depths[1]), t)
+			var row: Dictionary = {"id": _hash(salt, 0x100 + i) & 0x3fffffff, "find": find, "x": at.x, "z": at.y, "depth": depth,
+				"r": float(cfg.get("r_m", 2.0)), "source": id, "vein": salt}
+
+			if i < shown:
+				row["show"] = true
+
+			_add_pocket(row)
+
+			if i >= shown and unit(salt, 0x200 + i) < float(cfg.get("gem_per_m", 0.06)) * depth:
+				_add_pocket({"id": _hash(salt, 0x300 + i) & 0x3fffffff, "find": _gem_at(cfg, journey[c], unit(salt, 0x400 + i)), "x": at.x, "z": at.y,
+					"depth": depth + float(cfg.get("gem_below_m", 0.8)), "r": float(cfg.get("r_m", 2.0)), "source": id, "vein": salt})
+
+	report.append("resources: %d gold and silver veins" % starts.size())
+
+
+# A gem for a vein at journey j: one of the gems rows (find, journey_min) it fits, picked by u.
+func _gem_at(cfg: Dictionary, j: float, u: float) -> String:
+	var fits: Array = []
+
+	for g in cfg.get("gems", [["amethyst", 0.0]]):
+		if j >= float(g[1]):
+			fits.append(str(g[0]))
+
+	return str(fits[mini(int(u * float(fits.size())), fits.size() - 1)]) if not fits.is_empty() else "amethyst"
+
+
+func _add_pocket(row: Dictionary) -> void:
+	var pid: int = int(row["id"])
+
+	if _pocket_of.has(pid):
+		return
+
+	_pocket_of[pid] = pockets.size()
+	pockets.append(row)
+	_bin_add(_pocket_bins, float(row["x"]), float(row["z"]), pockets.size() - 1)
