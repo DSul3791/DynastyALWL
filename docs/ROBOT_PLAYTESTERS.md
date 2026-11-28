@@ -87,8 +87,9 @@ blueprints and hammers them, lights a campfire, treads a path with the hoe and s
 `GOAL <id> try|done|stuck`, with GATHER, MADE, FELL, ROCK, BUSHES, BUILT, PATH, SOLD and DROPPED lines on the way, and a WEIGHT line (each item's
 real kg, heaviest first) after a goal where the game said "Too heavy". It hunts with a spear (a rabbit, then a deer; before each chase it stands and looks for up to 45 s and walks, not runs, to within
 40 m, a deer seen to 200 m: STALK lines; with none by the camp it walks
-out up to four 300 m legs and chases again) and works the carcass with the knife (HUNT, HUNTWALK, CARCASS lines). When gathering or sweeping up it never presses E on a "talk" prompt, and shuts a talk that opens anyway. For copper it walks up any river its own map shows, else widening loops round the camp, for up to 15 minutes
-(EXPLORE lines). It digs clay with the Wooden - Shovel: one dig 1.8 m ahead, a step 1.8 m sideways, so the holes lie side by side;
+out up to four 300 m legs and chases again) and works the carcass with the knife (HUNT, HUNTWALK, CARCASS lines). When gathering or sweeping up it never presses E on a "talk" prompt, and shuts a talk that opens anyway. For copper and tin it does what the copper hint says: it walks up a river its own map shows in short legs, always on from where it is,
+keeps to the river's line where a narrow stream drops off the map, and where the river gives out loops round that spot (round camp before any river is seen), for up to 40 minutes,
+then walks home however far that is (EXPLORE lines; it reads only its own map and the rocks drawn round it, never the server's ore list). It digs clay with the Wooden - Shovel: one dig 1.8 m ahead, a step 1.8 m sideways, so the holes lie side by side;
 a row starts 12 m out from the camp and the next one another way and 25 m further after 8 digs with no clay; a click that brings
 nothing in is aimed again closer and steeper (CLAY lines). For charcoal it keeps firewood or a log burning in its camp fire, takes the charcoal out of the fire's store and
 comes back when the rest should have burned (one about every 400 s; a log leaves 27, a firewood 3; CHARCOAL lines). A
