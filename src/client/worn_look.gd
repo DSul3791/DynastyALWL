@@ -75,6 +75,12 @@ static func attach(rig: Node, item_ids: Array, far: bool = false) -> int:
 		if str(torso_row.get("builder", "")) in TORSO_BUILDERS:
 			under = maxf(under, float(int(torso_row.get("layer", 1)) + 1) * LAYER_M)
 
+	var layer_chest: bool = false      # a near garment's fitted layer is the chest on this body (worn_shell.gd LAYER_IS_CHEST): the shirt under it keeps no chest pieces
+
+	for item_id in item_ids:
+		var chest_row: Dictionary = table().get(str(item_id), {})
+		layer_chest = layer_chest or (not far and rig.has_meta("worn_shell") and str(chest_row.get("builder", "")) in WornShell.LAYER_IS_CHEST)
+
 	for item_id in item_ids:
 		var row: Dictionary = table().get(str(item_id), {})
 
@@ -90,7 +96,10 @@ static func attach(rig: Node, item_ids: Array, far: bool = false) -> int:
 		var parts: Array = parts_of(str(row["builder"]), out, bool(row.get("fringe", false)), under)
 
 		if rig.has_meta("worn_shell"):
-			parts = WornShell.fit_parts(str(row["builder"]), parts)      # fitted to Dave's body, over the layer (worn_shell.gd CHEST_TURN)
+			parts = WornShell.fit_parts(str(row["builder"]), parts, not far)      # fitted to Dave's body, over the layer (worn_shell.gd CHEST_TURN)
+
+		if layer_chest and str(row["builder"]) in WornShell.UNDER_CHEST:
+			parts = parts.filter(func(part: Dictionary) -> bool: return str(part["bone"]) != "chest")
 
 		for part in parts:
 			if far and bool(part.get("detail", false)):
@@ -246,11 +255,13 @@ static func _dome() -> ArrayMesh:
 # What each worn item is made of, from its id: hide and leather show a soft grain and a little sheen, wool and padded cloth a woven nap, linen a fine weave, fur strands,
 # grass and fibre plaited stems, bronze and steel are shiny metal, iron and mail a drab matt grey. The look follows Art_Direction.md: real stuff, no plastic (Kathreen, 3 Nov 2026).
 const STUFF_PREFIXES := [["hide", "hide"], ["leather", "hide"], ["quiver", "hide"], ["simple_backpack", "hide"], ["improved_backpack", "hide"], ["quality_backpack", "hide"],
-	["advanced_backpack", "hide"], ["wool", "wool"], ["gambeson", "wool"], ["linen", "linen"],
+	["advanced_backpack", "hide"], ["wool", "wool"], ["gambeson", "quilted"], ["linen", "linen"],
 	["fur", "fur"], ["grass", "fibre"], ["fibre", "fibre"], ["bronze", "metal"], ["iron", "iron"], ["steel", "metal"], ["mail", "iron"], ["plate", "metal"]]
-# stuff -> [weave scale (per metre), weave strength, roughness, specular, metallic, woven share]
+# stuff -> [weave scale (per metre), weave strength, roughness, specular, metallic, woven share, quilting channel width in metres (0 none)]
 const STUFF_LOOKS := {
-	"hide": [60.0, 0.16, 0.78, 0.3, 0.0, 0.1], "wool": [260.0, 0.22, 0.98, 0.1, 0.0, 0.7], "linen": [420.0, 0.12, 0.9, 0.18, 0.0, 0.9],
+	"hide": [60.0, 0.16, 0.78, 0.3, 0.0, 0.1], "wool": [260.0, 0.22, 0.98, 0.1, 0.0, 0.7],
+	# The gambeson (Dave, 28 Nov 2026: get it a shape of its own): wool with quilted channels 5 cm apart, each puffed between dark stitched seams, drawn on the cloth.
+	"quilted": [260.0, 0.2, 0.98, 0.1, 0.0, 0.7, 0.05], "linen": [420.0, 0.12, 0.9, 0.18, 0.0, 0.9],
 	"fur": [380.0, 0.3, 0.95, 0.12, 0.0, 0.3], "fibre": [140.0, 0.34, 0.9, 0.2, 0.0, 0.9], "metal": [30.0, 0.1, 0.38, 0.5, 0.85, 0.0],
 	# Iron and mail (Dave, 27 Nov 2026: "it should be a drab gray. steel will be shiny"; R-ITEM-IRON-LOOK; BugsList 189): a dull, matt dark grey with a faint sheen, as
 	# forge-blackened iron. As "metal" (85% metallic) it drew flat black wherever nothing bright was there to reflect.
@@ -267,6 +278,7 @@ uniform float rough = 0.95;
 uniform float spec = 0.15;
 uniform float metal = 0.0;
 uniform float woven = 0.7;      // 1 all threads, 0 all grain (hide, metal)
+uniform float quilt = 0.0;     // quilting channel width in metres (0 none): channels across x, puffed in the middle and dark at the stitched seams
 uniform bool rest_custom = false;   // a fitted layer (worn_shell.gd): the weave from the skin's rest place in CUSTOM0, so it stays on the cloth as the body bends
 
 varying vec3 lp;
@@ -296,6 +308,12 @@ void fragment() {
 	float blotch = vnoise(lp * 9.0 + 3.0);                                                                  // wear, grease and sun fade
 	float grain = vnoise(q * 0.35);
 	float v = mix(1.0, 0.82 + 0.36 * mix(grain, threads, woven), depth) * (0.9 + 0.2 * blotch);
+
+	if (quilt > 0.0) {
+		float c = fract(lp.x / quilt);
+		float stitch = step(0.5, fract(lp.y / 0.012));                                     // running stitches down each seam
+		v *= mix(0.62 + 0.12 * stitch, 1.0, pow(sin(c * 3.14159), 0.45));
+	}
 	ALBEDO = tint * v;
 	ROUGHNESS = clamp(rough - 0.12 * blotch, 0.05, 1.0);
 	SPECULAR = spec;
@@ -331,6 +349,7 @@ static func _material(color: Color, stuff: String = "wool", fitted: bool = false
 		m.set_shader_parameter("spec", float(look[3]))
 		m.set_shader_parameter("metal", float(look[4]))
 		m.set_shader_parameter("woven", float(look[5]))
+		m.set_shader_parameter("quilt", float(look[6]) if look.size() > 6 else 0.0)
 		m.set_shader_parameter("rest_custom", fitted)
 		_materials[key] = m
 
@@ -444,17 +463,16 @@ static func parts_of(builder: String, o: float, fringe: bool = false, under: flo
 			for side in [-1.0, 1.0]:
 				out.append(_p("chest", "sphl", Vector3(0.22 * side, 0.22, 0.0), Vector3(0.16, 0.1, 0.2 + o * 2.0), Vector3(0.0, 0.0, 0.3 * side), false, 0.03))
 		"padded":
-			# A quilted gambeson (refs: arming doublets): a thick sleeved torso with vertical quilting lines, a high collar, and long sleeves to the wrist.
+			# A quilted gambeson (refs: arming doublets): a thick sleeved torso, a high collar, and long sleeves to the wrist; its quilting is in its cloth ("quilted").
+			# On Dave's body its fitted layer is its chest instead of the tube (worn_shell.gd LAYER_IS_CHEST).
 			out.append(_p("chest", "cyl", Vector3(0.0, -0.04, 0.0), Vector3(0.41 + o * 2.0, 0.5, 0.3 + o * 2.0)))
 			out.append(_p("hips", "cyl", Vector3(0.0, -0.08, 0.0), Vector3(0.45 + o * 2.0, 0.3, 0.33 + o * 2.0), Vector3.ZERO, false, 0.03))
 			out.append(_p("chest", "cyl", Vector3(0.0, 0.26, 0.0), Vector3(0.2 + o * 2.0, 0.08, 0.2 + o * 2.0), Vector3.ZERO, true, 0.12))
 
-			for k in range(5):
-				out.append(_p("chest", "box", Vector3(-0.16 + 0.08 * float(k), -0.02, -0.15 - o), Vector3(0.01, 0.44, 0.012), Vector3.ZERO, true, 0.2))
-
 			for side in ["r", "l"]:
-				out.append(_p("arm_" + side, "cyl", Vector3(0.0, -0.15, 0.0), Vector3(0.14 + o * 2.0, 0.32, 0.14 + o * 2.0)))
-				out.append(_p("forearm_" + side, "cyl", Vector3(0.0, -0.12, 0.0), Vector3(0.115 + o * 2.0, 0.25, 0.115 + o * 2.0), Vector3.ZERO, false, 0.03))
+				# Puffed padded sleeves, wide enough that the 3 cm layer under them stays inside their flat faces.
+				out.append(_p("arm_" + side, "cyl", Vector3(0.0, -0.15, 0.0), Vector3(0.16 + o * 2.0, 0.32, 0.16 + o * 2.0)))
+				out.append(_p("forearm_" + side, "cyl", Vector3(0.0, -0.12, 0.0), Vector3(0.13 + o * 2.0, 0.25, 0.13 + o * 2.0), Vector3.ZERO, false, 0.03))
 		"trousers":
 			# Sewn hide trousers: a waistband with a cord, a seat and two full legs, a darker seam down the outside of each leg and a turned cuff at each ankle.
 			out.append(_p("hips", "cyl", Vector3(0.0, 0.03, 0.0), Vector3(0.38 + o * 2.0, 0.07, 0.27 + o * 2.0), Vector3.ZERO, false, 0.3))

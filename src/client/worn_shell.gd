@@ -19,7 +19,8 @@ const NODE_PREFIX := "Worn_Shell_"
 const TORSO := ["Spine", "Spine1", "Spine2", "RightShoulder", "LeftShoulder"]
 const REGIONS := {
 	"tunic": TORSO + ["RightArm", "LeftArm", "RightForeArm", "LeftForeArm"],
-	"padded": TORSO + ["RightArm", "LeftArm", "RightForeArm", "LeftForeArm"],
+	# The gambeson's layer is its chest (LAYER_IS_CHEST), so it runs down over the hips into its skirt (laptop pictures 28 Nov 2026: a band of bare waist between them).
+	"padded": TORSO + ["Hips", "RightArm", "LeftArm", "RightForeArm", "LeftForeArm"],
 	"mailshirt": TORSO + ["RightArm", "LeftArm"],
 }
 # The garment's own pieces on this body (worn_look.gd attach, fit_parts): Dave's back stands further out than the pieces were written for (the chest tube's back corner
@@ -35,7 +36,13 @@ const CHEST_DEEPER := 1.2
 const CHEST_BACK_M := 0.01
 const CHEST_NARROWER := 0.9
 # How far out from the skin, in metres: inside the garment's pieces (a layer-2 garment's pieces stand 3 cm out), and a shirt under a gambeson under mail in that order.
-const OUT_M := {"tunic": 0.01, "padded": 0.018, "mailshirt": 0.024}
+# The gambeson's layer stands 3 cm out, as thick as its padding, and the mail shirt's goes over it.
+const OUT_M := {"tunic": 0.01, "padded": 0.03, "mailshirt": 0.036}
+# Garments whose fitted layer is their chest on a near body: the rigid chest tube is left off (Dave, 28 Nov 2026, the gambeson's own shape: the tube read as a squared
+# block from the side, BugsList 158), so the padded jacket follows the body in every pose. Far bodies hang no layer and keep the tube.
+const LAYER_IS_CHEST := ["padded"]
+# Garments worn under one of those (a shirt under the gambeson): their chest pieces would stand out through its layer, so they are left off; their own layer stays under it.
+const UNDER_CHEST := ["tunic"]
 
 static var _cache: Dictionary = {}      # "<mesh id>|<builder>" -> ArrayMesh (or null: a mesh that is not one skinned body)
 static var _keep: Array = []            # the source meshes, so a cached id is never reused by a new mesh
@@ -50,14 +57,17 @@ static func covers(builder: String) -> bool:
 
 # `builder`'s pieces (worn_look.gd parts_of) as they hang on a body with this layer (see CHEST_TURN). Other garments' pieces, and pieces on other bones, are returned as
 # they are.
-static func fit_parts(builder: String, parts: Array) -> Array:
+static func fit_parts(builder: String, parts: Array, near: bool = true) -> Array:
 	if not covers(builder):
 		return parts
+
+	if near and builder in LAYER_IS_CHEST:
+		return parts.filter(func(part: Dictionary) -> bool: return not _is_tube(part))
 
 	var tube: Dictionary = {}
 
 	for part in parts:
-		if str(part["bone"]) == "chest" and str(part["shape"]) == "cyl" and not bool(part.get("detail", false)):
+		if _is_tube(part):
 			tube = part
 			break
 
@@ -86,6 +96,10 @@ static func fit_parts(builder: String, parts: Array) -> Array:
 		out.append(piece)
 
 	return out
+
+
+static func _is_tube(part: Dictionary) -> bool:
+	return str(part["bone"]) == "chest" and str(part["shape"]) == "cyl" and not bool(part.get("detail", false))
 
 
 # A flat chest detail laid on the turned tube's front (front is -Z): on the flat face across the chest, or turned onto the slanted face beside it, its back sunk 2 mm in,
@@ -330,9 +344,14 @@ static func _surface(surface: Dictionary, in_region: PackedByteArray, out_m: flo
 	k_bones.resize(n_kept * per)
 	k_weights.resize(n_kept * per)
 
+	# One push direction per place: the body's seams (UV and smoothing splits) are separate vertices at the same place with their own normals, and pushed out each
+	# its own way they opened cracks the skin showed through (laptop pictures 28 Nov 2026, the gambeson's 3 cm layer at the armpit and side).
+	var group_of: PackedInt32Array = _places(verts, kept)
+	var push: PackedVector3Array = _shared(normals, kept, group_of)
+
 	for i in range(n_kept):
 		var v: int = kept[i]
-		pos[i] = verts[v] + normals[v] * out_m
+		pos[i] = verts[v] + push[i] * out_m
 		nrm[i] = normals[v]
 		rest[i * 3] = verts[v].x
 		rest[i * 3 + 1] = verts[v].y
@@ -361,10 +380,11 @@ static func _surface(surface: Dictionary, in_region: PackedByteArray, out_m: flo
 		b_pos.resize(n_kept)
 		b_nrm.resize(n_kept)
 
+		var b_push: PackedVector3Array = _shared(b_normals if b_normals.size() == verts.size() else normals, kept, group_of)
+
 		for i in range(n_kept):
-			var n: Vector3 = b_normals[kept[i]] if b_normals.size() == verts.size() else normals[kept[i]]
-			b_pos[i] = b_verts[kept[i]] + n * out_m
-			b_nrm[i] = n
+			b_pos[i] = b_verts[kept[i]] + b_push[i] * out_m
+			b_nrm[i] = b_normals[kept[i]] if b_normals.size() == verts.size() else normals[kept[i]]
 
 		var one: Array = []
 		one.resize(Mesh.ARRAY_MAX)
@@ -378,6 +398,55 @@ static func _surface(surface: Dictionary, in_region: PackedByteArray, out_m: flo
 		flags |= Mesh.ARRAY_FLAG_USE_8_BONE_WEIGHTS
 
 	return {"surface": surface["surface"], "arrays": made, "blends": blends, "flags": flags, "vertices": kept}
+
+
+# Each kept vertex's place group: kept vertices at the same rest place (to 0.1 mm) share one group.
+static func _places(verts: PackedVector3Array, kept: PackedInt32Array) -> PackedInt32Array:
+	var groups: Dictionary = {}
+	var out: PackedInt32Array = PackedInt32Array()
+	out.resize(kept.size())
+
+	for i in range(kept.size()):
+		var key: Vector3i = Vector3i((verts[kept[i]] * 10000.0).round())
+
+		if not groups.has(key):
+			groups[key] = groups.size()
+
+		out[i] = int(groups[key])
+
+	return out
+
+
+# One push per place group, for each kept vertex: the group's normals averaged, made longer so every copy still stands the full distance out along its own normal
+# (Lane A da27d122: a plain average left 37 to 52 points of a seam nearer the skin than a third of the distance). At most MAX_SEAM_PUSH times as long, at a sharp crease.
+const MAX_SEAM_PUSH := 2.5
+
+
+static func _shared(normals: PackedVector3Array, kept: PackedInt32Array, group_of: PackedInt32Array) -> PackedVector3Array:
+	var sums: PackedVector3Array = PackedVector3Array()
+	var least: PackedFloat32Array = PackedFloat32Array()      # per group: the smallest share of the average along any copy's own normal
+	var out: PackedVector3Array = PackedVector3Array()
+	out.resize(kept.size())
+
+	for i in range(kept.size()):
+		if group_of[i] >= sums.size():
+			sums.resize(group_of[i] + 1)
+			least.resize(group_of[i] + 1)
+			least[group_of[i]] = 1.0
+
+		sums[group_of[i]] += normals[kept[i]]
+
+	for i in range(kept.size()):
+		var n: Vector3 = sums[group_of[i]]
+
+		if n.length_squared() > 1e-12:
+			least[group_of[i]] = minf(least[group_of[i]], n.normalized().dot(normals[kept[i]].normalized()))
+
+	for i in range(kept.size()):
+		var n: Vector3 = sums[group_of[i]]
+		out[i] = n.normalized() / maxf(least[group_of[i]], 1.0 / MAX_SEAM_PUSH) if n.length_squared() > 1e-12 else normals[kept[i]]
+
+	return out
 
 
 # Main thread: the ArrayMesh of one garment from its worked surfaces; null when it had none.
