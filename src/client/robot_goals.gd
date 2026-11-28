@@ -613,6 +613,8 @@ func _explore_for(item: String, limit_s: float) -> float:
 	var lost: int = 0                    # legs walked on the heading with no river cell ahead
 	var centre: Vector3 = _home          # what the loop legs circle: camp, then where a followed river gave out
 	var legs: int = 0
+	var loop_to: Vector3 = centre        # the loop leg's spot
+	var loop_tries: int = 0              # walks on it so far
 
 	while Time.get_ticks_msec() < until and _nearest_boulder(item) == 0:
 		var here: Vector3 = c.body.global_position
@@ -631,10 +633,17 @@ func _explore_for(item: String, limit_s: float) -> float:
 			if heading != Vector3.ZERO:
 				centre = here   # the river gave out (its source, or it is lost): look round there, not back at camp
 				leg = 0
+				loop_tries = 0
 			heading = Vector3.ZERO
 			lost = 0
-			leg += 1
-			up = centre + Vector3.FORWARD.rotated(Vector3.UP, float(leg) * 2.4) * (150.0 + 100.0 * float(leg))
+
+			if leg == 0 or _flat(loop_to) < 10.0 or loop_tries >= 4:   # a loop leg's spot is kept until reached or four walks on it
+				leg += 1
+				loop_tries = 0
+				loop_to = centre + Vector3.FORWARD.rotated(Vector3.UP, float(leg) * 2.4) * (150.0 + 100.0 * float(leg))
+
+			loop_tries += 1
+			up = loop_to
 			how = "loop leg %d" % leg
 
 		await r._go_to(up, minf(60.0 if how.begins_with("loop") else 30.0, float(until - Time.get_ticks_msec()) / 1000.0), 6.0)
@@ -698,7 +707,7 @@ func _walk_home(limit_s: float) -> float:
 
 	limit_s = maxf(limit_s, _flat(_home) / 1.5)   # back from a far trip (copper is over a kilometre out) at a walk, not cut off half way
 
-	while leg_s < limit_s and c.body.global_position.distance_to(_home) > 8.0:
+	while leg_s < limit_s and Time.get_ticks_msec() < _end_ms and c.body.global_position.distance_to(_home) > 8.0:
 		await r._go_to(_home, 60.0, 6.0)
 		leg_s += 60.0
 
@@ -737,7 +746,7 @@ func _play_goal(g: Dictionary) -> String:
 				if _nearest_boulder(id) == 0:
 					return "robot cannot find %s yet: none drawn after exploring up to %.0f m from camp (it walks up any river its map shows; the server's resources line gives the nearest by route)" % [id, far]
 
-			return await _gather(id, _count(id) + int(check.get("count", 1)) if id == "tin_ore" else int(check.get("count", 1)))
+			return await _gather(id, _count(id) + int(check.get("count", 1)))
 		"path":
 			return await _path(int(check.get("count", 15)))
 		"sell":
