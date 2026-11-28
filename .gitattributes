@@ -7,7 +7,7 @@ tools/godot text eol=lf
 Dockerfile text eol=lf
 *.dockerignore text eol=lf
 *.yaml text eol=lf
-# The bought animal models (Dave 23 Nov 2026: in the repository through Git LFS); their .import notes stay plain text. Clones that do
+# The animal models, bought and Dave's own (Dave 23 and 28 Nov 2026: in the repository through Git LFS, R-REPO-PUBLIC); their .import notes stay plain text. Clones that do
 # not need the models skip them: tools/skip_models.sh.
 assets/animals/**/*.fbx filter=lfs diff=lfs merge=lfs -text
 assets/animals/**/*.glb filter=lfs diff=lfs merge=lfs -text
