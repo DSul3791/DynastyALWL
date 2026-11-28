@@ -470,8 +470,9 @@ static func parts_of(builder: String, o: float, fringe: bool = false, under: flo
 			out.append(_p("chest", "cyl", Vector3(0.0, 0.26, 0.0), Vector3(0.2 + o * 2.0, 0.08, 0.2 + o * 2.0), Vector3.ZERO, true, 0.12))
 
 			for side in ["r", "l"]:
-				out.append(_p("arm_" + side, "cyl", Vector3(0.0, -0.15, 0.0), Vector3(0.14 + o * 2.0, 0.32, 0.14 + o * 2.0)))
-				out.append(_p("forearm_" + side, "cyl", Vector3(0.0, -0.12, 0.0), Vector3(0.115 + o * 2.0, 0.25, 0.115 + o * 2.0), Vector3.ZERO, false, 0.03))
+				# Puffed padded sleeves, wide enough that the 3 cm layer under them stays inside their flat faces.
+				out.append(_p("arm_" + side, "cyl", Vector3(0.0, -0.15, 0.0), Vector3(0.16 + o * 2.0, 0.32, 0.16 + o * 2.0)))
+				out.append(_p("forearm_" + side, "cyl", Vector3(0.0, -0.12, 0.0), Vector3(0.13 + o * 2.0, 0.25, 0.13 + o * 2.0), Vector3.ZERO, false, 0.03))
 		"trousers":
 			# Sewn hide trousers: a waistband with a cord, a seat and two full legs, a darker seam down the outside of each leg and a turned cuff at each ankle.
 			out.append(_p("hips", "cyl", Vector3(0.0, 0.03, 0.0), Vector3(0.38 + o * 2.0, 0.07, 0.27 + o * 2.0), Vector3.ZERO, false, 0.3))
