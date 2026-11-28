@@ -931,6 +931,18 @@ func _init() -> void:
 	m.inventory_of(1).remove(salt_n, m.inventory_of(1).count_of(salt_n))
 	m.inventory_of(1).remove(sand_n, m.inventory_of(1).count_of(sand_n))
 
+	# digging.json under with an amount (crafting chain, 28 Nov 2026): [item, chance, min, max] brings up min..max of the layer below.
+	var keep_under: Variant = m._dig_cfg.get("under", {})
+	m._dig_cfg["under"] = {"loam": ["clay", 1.0, 2, 3]}
+	m.inventory_of(1).remove(clay_n, m.inventory_of(1).count_of(clay_n))
+	mat[0] = "loam"
+	m._last_dig.clear()
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	var under_clay: int = m.inventory_of(1).count_of(clay_n)
+	check(under_clay >= 2 and under_clay <= 3, "a loam dig brings up 2 to 3 clay from the layer under it (%d)" % under_clay)
+	m.inventory_of(1).remove(clay_n, under_clay)
+	m._dig_cfg["under"] = keep_under
+
 	# digging.json finds: a worm by chance in moist living soil (a stand-in item here, at chance 1, until Jamie's Worm row lands).
 	check(str((m._dig_cfg.get("finds", [{}]) as Array)[0].get("item", "")) == "worm", "digging.json finds a worm in soil")
 	var keep_finds: Variant = m._dig_cfg.get("finds", [])
