@@ -2,7 +2,7 @@ extends SceneTree
 
 # The island resource landscape (docs/handoff/RESOURCE_DISTRIBUTION_ARCHITECTURE.md, Dave 21 Nov 2026; docs/design/RESOURCE_DISTRIBUTION.md):
 # src/stream/resource_context.gd on a made-up island, and the server's scatter reading it (server_items.gd _lay_out_sources, ore rocks,
-# boulders), and the client's rock shapes; stage 2: coal districts and seams (outcrops, digging coal), pockets a dig opens (saved, broken
+# boulders), and the client's rock shapes; stage 2: coal districts and seams (outcrops, digging coal), gold and silver veins, pockets a dig opens (saved, broken
 # for their find) and the five new finds. No tiles: the island is built from arrays.
 #   godot --headless --path . --script res://src/worldgen/tools/test_resource_landscape.gd
 
@@ -527,7 +527,7 @@ func _stage_two(all_cfg: Dictionary, cfg: Dictionary, spawn: Vector3, plain: Ref
 	check(int(host_counts["granite"][0]) == 0 and bool(host_counts["granite"][1]) and int(host_counts["shale"][0]) == outcrops and not bool(host_counts["shale"][1]) and int(host_counts[""][0]) == outcrops, "a seam in granite has no outcrops and no coal; in shale and in unknown rock it is all there (%s)" % str(host_counts))
 
 	# 12. Pockets: most sources have none; with every chance at 1 each table row shows, by its own rules, the same every build.
-	var real_pockets: int = (plain.get("pockets") as Array).size()
+	var real_pockets: int = (plain.get("pockets") as Array).filter(func(p: Dictionary) -> bool: return not p.has("vein")).size()
 	check(real_pockets < (plain.get("deposits") as Array).size(), "most sources have no pocket (%d pockets, %d sources)" % [real_pockets, (plain.get("deposits") as Array).size()])
 	var rich_cfg: Dictionary = cfg.duplicate(true)
 
@@ -545,6 +545,9 @@ func _stage_two(all_cfg: Dictionary, cfg: Dictionary, spawn: Vector3, plain: Ref
 	var placed_ok: bool = not pockets.is_empty()
 
 	for p in pockets:
+		if p.has("vein"):
+			continue   # veins: check 14
+
 		kinds[str(p["find"])] = true
 		var src: Dictionary = by_source[int(p["source"])]
 		var gap: float = Vector2(float(p["x"]) - float(src["x"]), float(p["z"]) - float(src["z"])).length()
@@ -613,3 +616,67 @@ func _stage_two(all_cfg: Dictionary, cfg: Dictionary, spawn: Vector3, plain: Ref
 	third._items.clear()
 	third._lay_out_pockets(cell, 32.0)
 	check(third._pockets_open.has(int(pocket["id"])) and third._items.is_empty(), "an emptied pocket stays empty after a restart")
+
+	# 14. Gold and silver veins (R-RES-PRECIOUS): only from iron and tin sources far enough in, starts gap_m apart, outcrops on the ground
+	# first then ever deeper along it, gems only under buried pockets; an outcrop lies as a rock with no dig.
+	var vein_cfg: Dictionary = cfg.duplicate(true)
+	vein_cfg["veins"]["chance"] = 1.0
+	vein_cfg["veins"]["gem_per_m"] = 0.2
+	vein_cfg["veins"]["gap_m"] = 400.0
+	var veined: RefCounted = island(vein_cfg, spawn)
+	var vein_rows: Array = (veined.get("pockets") as Array).filter(func(p: Dictionary) -> bool: return p.has("vein"))
+	var sources: Dictionary = {}
+
+	for d in veined.get("deposits"):
+		sources[int(d["id"])] = d
+
+	var veins: Dictionary = {}
+	var vein_ok: bool = not vein_rows.is_empty()
+	var gems: int = 0
+
+	for p in vein_rows:
+		var src: Dictionary = sources[int(p["source"])]
+		vein_ok = vein_ok and ["iron", "tin"].has(str(src["metal"])) and float(veined.call("journey_at", float(src["x"]), float(src["z"]))) >= 0.45
+
+		if ["gold", "silver"].has(str(p["find"])):
+			var line: Array = veins.get(int(p["vein"]), [])
+			line.append(p)
+			veins[int(p["vein"])] = line
+		else:
+			gems += 1
+			vein_ok = vein_ok and float(p["depth"]) > float(vein_cfg["veins"]["depth_m"][0]) and not p.has("show")
+
+	var heads: Array = []
+
+	for v in veins:
+		var line: Array = veins[v]
+		var shown_n: int = int(vein_cfg["veins"]["outcrop_points"])
+		var first: Dictionary = line[0]
+		vein_ok = vein_ok and line.size() > shown_n + 1 and bool(first.get("show", false)) and float(first["depth"]) == 0.0 and not (line[shown_n] as Dictionary).has("show")
+		vein_ok = vein_ok and float((line[line.size() - 1] as Dictionary)["depth"]) > float((line[shown_n] as Dictionary)["depth"])
+		var src: Dictionary = sources[int(first["source"])]
+
+		for h in heads:
+			vein_ok = vein_ok and Vector2(float(src["x"]), float(src["z"])).distance_to(h) >= 400.0
+
+		heads.append(Vector2(float(src["x"]), float(src["z"])))
+
+	check(vein_ok and veins.size() >= 1 and gems >= 1, "%d veins from deep iron and tin sources, far apart, outcrops first then deeper, %d gems below" % [veins.size(), gems])
+	check(str(island(vein_cfg, spawn).get("pockets")) == str(veined.get("pockets")), "the same veins every build")
+	if veins.is_empty():
+		print("resource landscape: no vein on the test island; the outcrop check was not run")
+		failures += 1
+		return
+
+	var outcrop: Dictionary = (veins[veins.keys()[0]] as Array)[0]
+	var o_cell: Vector2i = Vector2i(floori(float(outcrop["x"]) / 32.0), floori(float(outcrop["z"]) / 32.0))
+	var shows = server("test_resource_vein", veined, Vector3(float(outcrop["x"]) + 1.0, ground(float(outcrop["x"]), float(outcrop["z"])), float(outcrop["z"])), "")
+	shows._items.clear()
+	shows._lay_out_pockets(o_cell, 32.0, {"ground": func(x: float, z: float) -> float: return maxf(ground(x, z), 0.5)})
+	var o_rock: Dictionary = {}
+
+	for id in shows._items:
+		if int(shows._items[id].get("scatter", -1)) == shows.POCKET_KEY | int(outcrop["id"]):
+			o_rock = shows._items[id]["boulder"]
+
+	check(not o_rock.is_empty() and str(o_rock["ore"]) == str(outcrop["find"]) and float(o_rock["radius"]) >= 0.5, "a vein's outcrop lies on the ground as a %s rock with no dig (%s)" % [str(outcrop["find"]), str(o_rock)])
