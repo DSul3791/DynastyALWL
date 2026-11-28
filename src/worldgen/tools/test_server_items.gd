@@ -905,6 +905,8 @@ func _init() -> void:
 	m._last_dig.clear()
 	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(m.inventory_of(1).count_of(soil_n) >= 1 and m.inventory_of(1).count_of(soil_n) <= 3 and m.inventory_of(1).count_of(sand_n) == 0, "a dig in loam brings up soil, not sand")
+	check(m.inventory_of(1).count_of(m.table.number_of("stone")) >= held_stone + 1, "a dig in loam always brings up a stone with the soil (Dave 28 Nov 2026, R-RES-DIG-STONES)")
+	held_stone = m.inventory_of(1).count_of(m.table.number_of("stone"))
 	mat[0] = "sand"
 	m._last_dig.clear()
 	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
