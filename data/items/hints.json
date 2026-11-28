@@ -14,7 +14,7 @@
 		{
 			"id": "drink",
 			"trigger": "water_in_view",
-			"text": "Stand at the edge of a river or lake and press E to drink. Sea water is too salty.",
+			"text": "Drink fresh water from a river or lake: stand at its edge and press E. Sea water is too salty.",
 			"goal": "drink"
 		},
 		{
