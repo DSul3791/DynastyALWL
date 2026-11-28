@@ -48,6 +48,7 @@ const ACTIONS := [
 	["character", "Character screen", "Screens", CONTEXT_WORLD, KEY_TAB, false, false, false],
 	["journal", "Journal: the index (again: close)", "Screens", CONTEXT_WORLD, KEY_J, false, false, false],
 	["goals", "Journal: goals", "Screens", CONTEXT_WORLD, KEY_G, false, false, false],
+	["skills", "Journal: skills", "Screens", CONTEXT_WORLD, KEY_O, false, false, false],
 	["map", "Journal: map", "Screens", CONTEXT_WORLD, KEY_M, false, false, false],
 	["photo", "Photo camera (toggle)", "Screens", CONTEXT_WORLD, KEY_K, false, false, false],
 	["photo_up", "Photo camera: raise", "Screens", CONTEXT_WORLD, KEY_PAGEUP, false, false, true],
