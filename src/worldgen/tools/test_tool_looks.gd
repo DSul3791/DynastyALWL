@@ -63,20 +63,22 @@ func _init() -> void:
 	_check(absf((BasicLook.mesh_for("iron_pickaxe").surface_get_material(1) as StandardMaterial3D).roughness - 0.4) < 0.001, "the locked pickaxe keeps metal roughness 0.4")
 	_check(BasicLook.mesh_for("iron_shovel_large").get_surface_count() == 2 and BasicLook.mesh_for("iron_shovel_large").surface_get_material(1) != BasicLook.mesh_for("iron_pickaxe").surface_get_material(1), "shovel and pickaxe use separate shared metal materials")
 
-	# Carry in third person: a hoe blade-down (haft 45 to 60 degrees below horizontal), a saw by the handle with the blade down and back about 30 degrees.
-	var hoe_dir: Vector3 = Basis(Vector3.RIGHT, deg_to_rad(HeldItem.THIRD_HOE_PITCH_DEG)) * HeldItem.HELD_LOOK_TURN["hoe"] * Vector3(1.0, 0.0, 0.0)
+	# Carry in third person: a saw by the handle with the blade down and back about 30 degrees.
 	var saw_dir: Vector3 = Basis(Vector3.RIGHT, deg_to_rad(HeldItem.THIRD_SAW_PITCH_DEG)) * HeldItem.HELD_LOOK_TURN["saw"] * Vector3(1.0, 0.0, 0.0)
-	var hoe_below: float = rad_to_deg(asin(clampf(-hoe_dir.z, -1.0, 1.0)))
-	print("carried hoe haft ", hoe_dir, " is ", hoe_below, " degrees below horizontal; saw blade ", saw_dir)
-	_check(hoe_below >= 45.0 and hoe_below <= 60.0, "the carried hoe's haft is %.0f degrees below horizontal (45 to 60)" % hoe_below)
 	_check(saw_dir.z < -0.8 and saw_dir.y < -0.3, "the carried saw's blade points down and back (%.2f, %.2f)" % [saw_dir.y, saw_dir.z])
 
-	# Carry: a shovel carried in third person points its blade down, at least 20 degrees from vertical but not past it (blade end below the hand).
-	var carry: Basis = Basis(Vector3.RIGHT, deg_to_rad(HeldItem.THIRD_SHOVEL_PITCH_DEG)) * HeldItem.HELD_LOOK_TURN["shovel"]
-	var blade_dir: Vector3 = carry * Vector3(1.0, 0.0, 0.0)
-	var from_vertical: float = rad_to_deg(acos(clampf(-blade_dir.z, -1.0, 1.0)))
-	print("shovel carried: blade direction ", blade_dir, " is ", from_vertical, " degrees from straight down")
-	_check(blade_dir.z < -0.5 and from_vertical >= 20.0, "the carried shovel points its blade down, %.0f degrees from vertical" % from_vertical)
+	# A hoe is carried upright on the hammer's line along the open hand (it lay 31 degrees off the hand and showed beside it), the hand down the haft so the
+	# blade's far end is THIRD_STAFF_REACH_M away, the blade (model -Z) facing forward (+Y); a shovel hangs like a hammer.
+	for id in ["wooden_hoe", "copper_hoe", "steel_hoe"]:
+		var hoe: Node3D = HeldItem.look_tool_node(id)
+		HeldItem.third_hold(hoe, "", "hoe")
+		var haft: Vector3 = hoe.basis * Vector3.UP
+		var hand_on: float = hoe.position.length()
+		print("%s carried: haft %s, hand %.2f m from the model origin, blade end %.2f m from the hand" % [id, haft, hand_on, hand_on + float(hoe.get_meta("head_m"))])
+		_check(haft.angle_to(HeldItem.third_hang_turn(0.0) * Vector3.UP) < 0.01, id + ": the haft hangs on the hammer's line")
+		_check(absf(hand_on + float(hoe.get_meta("head_m")) - HeldItem.THIRD_STAFF_REACH_M) < 0.01 and hand_on > 0.02, id + ": the hand is on the haft, %.2f m from the blade end" % (hand_on + float(hoe.get_meta("head_m"))))
+		_check((hoe.basis * Vector3.FORWARD).y > 0.5, id + ": the blade faces forward, away from the shins")
+		hoe.free()
 
 	# Axes and hammers: a straight haft along x with the head at its +x end, head wider in z than the haft is thick, all on one plain surface (no metal heads yet).
 	for id in ["stone_axe", "stone_hammer"]:
@@ -367,7 +369,7 @@ func _init() -> void:
 	# below the hand; a blade points forward and a little down; all turn out to +X (the body's right, away from the thigh).
 	var table: Variant = ItemTable.load_default()
 
-	for row in [["stone_axe", "axe"], ["iron_axe", "axe"], ["stone_hammer", "hammer"], ["iron_pickaxe", "pick"], ["stone_mace", "mace"], ["iron_warhammer", "hammer"], ["steel_greataxe", "axe"], ["iron_shortsword", "sword"], ["iron_knife", "knife"], ["iron_sickle", "sickle"]]:
+	for row in [["stone_axe", "axe"], ["iron_axe", "axe"], ["stone_hammer", "hammer"], ["iron_pickaxe", "pick"], ["stone_mace", "mace"], ["iron_warhammer", "hammer"], ["steel_greataxe", "axe"], ["iron_shortsword", "sword"], ["iron_knife", "knife"], ["iron_sickle", "sickle"], ["copper_shovel", "shovel"], ["steel_shovel_large", "shovel"]]:
 		var id: String = str(row[0])
 		var carry_class: String = HeldItem.third_carry(id, str(table.entry(id).get("tool_class", "")))
 		var node: Node3D = HeldItem.look_tool_node(id)

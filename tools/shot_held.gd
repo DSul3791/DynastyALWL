@@ -10,6 +10,8 @@ extends SceneTree
 #                                          under 2 m it aims at the held item, else at the chest (default right:-90:1.6;left:90:1.6;hand:-90:0.7;front:0:1.6)
 #            --name=NAME   file prefix (default the item id): NAME_<angle>.png
 #            --clip=idle   the body's clip (any clip of the body: walk, run, crouch ...)
+#            --measure     also print how the handle lies on the hand, in the mount's frame: the palm's facing, the hand's line and the handle's line, and
+#                          the handle's angle out of the palm's plane (0: it lies flat across the palm; 90: it runs straight through it)
 #            --fist=ball   the old ball fist round the grip instead of the body's own hand closed on it (dynasty_grip.gd, BugsList 177: before pictures)
 # Needs a window and a GPU like tools/shot_node.gd (a window flashes up for a few seconds); under --headless nothing is drawn and it exits 4.
 # Prints one "shot held: saved PATH" line per picture and "shot held: N picture(s) in T s"; exit 4 when a picture was not saved, 2 on a bad item.
@@ -31,6 +33,7 @@ func _init() -> void:
 	var out: String = "user://shots"
 	var prefix: String = ""
 	var clip: String = "idle"
+	var measure: bool = false
 	var angles_text: String = "right:-90:1.6;left:90:1.6;hand:-90:0.7;front:0:1.6"
 
 	for a in OS.get_cmdline_user_args():
@@ -44,6 +47,8 @@ func _init() -> void:
 			clip = a.trim_prefix("--clip=")
 		elif a.begins_with("--angles="):
 			angles_text = a.trim_prefix("--angles=")
+		elif a == "--measure":
+			measure = true
 		elif a == "--fist=ball":
 			GripScript.closes = false   # the old ball fist round the grip, for a before picture (BugsList 177)
 
@@ -111,6 +116,10 @@ func _init() -> void:
 		tint = (worn as BaseMaterial3D).albedo_color   # the body's skin tint, as held_item.gd _third_skin_color
 
 	HeldItem.third_fist_on(model, Color(HeldItem.THIRD_SKIN.r * tint.r, HeldItem.THIRD_SKIN.g * tint.g, HeldItem.THIRD_SKIN.b * tint.b)).visible = true
+	if measure:
+		await create_timer(0.4).timeout
+		_measure(avatar, mount, model, item)
+
 	var cam: Camera3D = Camera3D.new()
 	cam.fov = FOV
 	vp.add_child(cam)
@@ -147,3 +156,28 @@ func _init() -> void:
 
 	print("shot held: %d picture(s) in %.1f s" % [saved, float(Time.get_ticks_msec() - started) / 1000.0])
 	quit(0 if saved == wanted and saved > 0 else 4)
+
+
+# --measure: the palm's facing (the hand bone's +Z, dynasty_body.gd GRIP_PALM_M), wrist to grip and the handle (the model's +Y), all in the mount's frame.
+func _measure(avatar: Node3D, mount: Node3D, model: Node3D, item: String) -> void:
+	var skeleton: Skeleton3D = avatar.get("skeleton") as Skeleton3D
+	var hand: int = skeleton.find_bone("mixamorig_RightHand") if skeleton != null else -1
+
+	if hand < 0:
+		print("shot held: measure FAIL no right hand bone")
+		return
+
+	var bone: Transform3D = skeleton.global_transform * skeleton.get_bone_global_pose(hand)
+	var to_mount: Basis = mount.global_basis.orthonormalized().inverse()
+	var palm: Vector3 = (to_mount * bone.basis.z).normalized()
+	var along: Vector3 = (to_mount * (mount.global_position - bone.origin)).normalized()
+	var shaft: Vector3 = (model.basis * Vector3.UP).normalized()
+	var out_deg: float = rad_to_deg(asin(clampf(absf(shaft.dot(palm)), 0.0, 1.0)))
+	var lowest: float = INF
+
+	for child in model.find_children("*", "MeshInstance3D", true, false):
+		var drawn: MeshInstance3D = child as MeshInstance3D
+		var box: AABB = drawn.global_transform * drawn.get_aabb()
+		lowest = minf(lowest, box.position.y)
+
+	print("shot held: measure %s palm %s hand %s handle %s out of palm plane %.0f deg, to the hand line %.0f deg; hand %.2f m up, tool's lowest point %.2f m up" % [item, str(palm), str(along), str(shaft), out_deg, rad_to_deg(shaft.angle_to(along)), mount.global_position.y - avatar.global_position.y, lowest - avatar.global_position.y])
