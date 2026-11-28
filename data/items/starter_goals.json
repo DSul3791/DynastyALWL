@@ -3,8 +3,8 @@
 	"goals": [
 		{
 			"id": "drink",
-			"title": "Drink at the water",
-			"hint": "Walk to the water's edge and press E to drink.",
+			"title": "Drink fresh water",
+			"hint": "Find fresh water: a river, stream, lake or spring. Stand at its edge and press E to drink. Sea water is too salty to drink.",
 			"after": [],
 			"check": {
 				"event": "drink",
@@ -82,7 +82,7 @@
 		{
 			"id": "fire",
 			"title": "Light a fire",
-			"hint": "Make a Campfire (6 sticks, 16 stones) and place it. Put sticks on it with F, then press E near it to light it. When the loose stones round camp run out, hold your Stone - Hammer and strike a boulder: each blow breaks off a stone.",
+			"hint": "Craft a Campfire in the inventory (I) from 6 sticks and 16 stones, then hold it and click the ground to place it. Put sticks on it with F, then press E near it to light it. When the loose stones round camp run out, hold your Stone - Hammer and strike a boulder: each blow breaks off a stone.",
 			"after": [
 				"fell"
 			],
@@ -111,7 +111,7 @@
 		{
 			"id": "path",
 			"title": "Tread a path from camp to the water",
-			"hint": "Hold the hoe and left click along the ground from your fire towards the water. Or Shift + right click to drop survey markers as you walk and the road builds itself. Paths are faster to walk. Each stroke on fresh ground lays one patch; a stroke on ground already trodden adds none.",
+			"hint": "Hold the hoe and left click along the ground from your fire towards the water. Or hold Shift and right click at one end (point A), then at the other (point B): the ground between is levelled and the path laid by itself. Paths are faster to walk. Each stroke on fresh ground lays one patch; a stroke on ground already trodden adds none.",
 			"after": [
 				"hoe"
 			],
@@ -171,7 +171,7 @@
 		{
 			"id": "workbench",
 			"title": "Build a Workbench",
-			"hint": "Hold your hammer, press R and pick Wooden - Workbench: 16 sticks, 6 twine and 8 stones. At it you make cobblestones, stone blocks, wooden pins, the flint scraper and more. When the loose stones round camp run out, hold your Stone - Hammer and strike a boulder: each blow breaks off a stone.",
+			"hint": "Hold your hammer, press R and pick Wooden - Workbench: 16 sticks, 6 twine and 8 stones. At it you make cobblestones, stone blocks, wooden pins, the Scraper and more. When the loose stones round camp run out, hold your Stone - Hammer and strike a boulder: each blow breaks off a stone.",
 			"after": [
 				"hammer"
 			],
@@ -184,8 +184,8 @@
 		},
 		{
 			"id": "spear",
-			"title": "Make a spear",
-			"hint": "A Wooden - Spear (1 stick, keep a stone) then 2 twine and a stone for a Stone - Spear.",
+			"title": "Make a Stone - Spear",
+			"hint": "Open the inventory (I) and craft a Wooden - Spear from 1 stick (keep a stone in your pack). Then craft a Stone - Spear from the Wooden - Spear, 2 twine and 1 stone.",
 			"after": [
 				"twine"
 			],
@@ -233,7 +233,7 @@
 		{
 			"id": "fishing_spear",
 			"title": "Make a Fishing spear",
-			"hint": "With your knife in your pack, craft a Fishing spear from a stick (the knife is kept). It spears fish in shallow water.",
+			"hint": "With a knife in your pack, open the inventory (I) and craft a Fishing spear from 1 stick (the knife is kept). It spears fish in shallow water.",
 			"after": [
 				"knife"
 			],
@@ -247,7 +247,7 @@
 		{
 			"id": "fish",
 			"title": "Catch a fish",
-			"hint": "Hold the Fishing spear, stand still (not swimming) within reach of water between ankle and waist deep, and jab it in. Later a fishing rod (2 sticks, 2 twine and a hook carved from a bone) or a fishing net (3 rope, 4 stones) catches more.",
+			"hint": "Hold the Fishing spear, stand still (not swimming) within reach of water between ankle and waist deep, and jab it in. Later a Fishing rod (2 sticks, 2 twine and a Hook carved from 1 bone) or a Fishing net (3 rope, 4 stones) catches more.",
 			"after": [
 				"fishing_spear"
 			],
@@ -289,7 +289,7 @@
 		{
 			"id": "sell",
 			"title": "Sell to Hob",
-			"hint": "Hob the trader buys what you pick. Talk to him with E, ask what he sells, and sell him a lot of stones.",
+			"hint": "Talk to Hob the trader at the camp with E, ask what he buys, and sell him something from your pack. Even stones sell.",
 			"after": [
 				"fibre"
 			],
@@ -302,7 +302,7 @@
 		{
 			"id": "order",
 			"title": "Fill Hob's order",
-			"hint": "Ask Hob: Any order for today? Pick what he wants and bring it back. He pays once a day.",
+			"hint": "Talk to Hob with E and ask: Any order for today? Bring him what he asks for and he pays for it. He gives one order a day.",
 			"after": [
 				"sell"
 			],
