@@ -4701,6 +4701,16 @@ func _run_screen_audit() -> void:
 		for journal_page in [items.journal.INDEX, items.journal.GOALS, items.journal.SKILLS, items.journal.MAP]:
 			shows.append(["journal " + journal_page, func() -> void: items.journal.show_page(journal_page), func() -> void: items.journal.close()])
 
+		shows.append(["journal goals, longest how-to", func() -> void:   # the goal with the most words, so its wrapping is seen
+			var longest: String = ""
+
+			for row in items.goal_book.rows:
+				if longest == "" or str(row["howto"]).length() > str(items.goal_book.row(longest)["howto"]).length():
+					longest = str(row["id"])
+
+			items.journal.selected = longest
+			items.journal.show_page(items.journal.GOALS), func() -> void: items.journal.close()])
+
 		shows.append(["journal skills, everything shown", func() -> void:   # every skill listed, each at a class top with every note
 			_fill_character_worst()
 			items.journal.skill_selected = "broadswords"

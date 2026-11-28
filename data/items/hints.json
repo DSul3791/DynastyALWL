@@ -14,7 +14,7 @@
 		{
 			"id": "drink",
 			"trigger": "water_in_view",
-			"text": "Stand at the water's edge and press E to drink.",
+			"text": "Stand at the edge of a river or lake and press E to drink. Sea water is too salty.",
 			"goal": "drink"
 		},
 		{
@@ -115,7 +115,7 @@
 		{
 			"id": "workbench",
 			"trigger": "bed_placed",
-			"text": "A Wooden - Workbench: hold your hammer, press R and pick it. 16 sticks, 6 twine, 8 stones. At it you make cobblestones, stone blocks, wooden pins, the flint scraper and more.",
+			"text": "A Wooden - Workbench: hold your hammer, press R and pick it. 16 sticks, 6 twine, 8 stones. At it you make cobblestones, stone blocks, wooden pins, the Scraper and more.",
 			"goal": "workbench"
 		},
 		{
@@ -126,7 +126,7 @@
 		{
 			"id": "spear",
 			"trigger": "workbench_placed",
-			"text": "Make a Wooden - Spear, then bind a stone on with 2 twine.",
+			"text": "Craft a Wooden - Spear from a stick, then a Stone - Spear with 1 stone and 2 twine.",
 			"goal": "spear"
 		},
 		{
@@ -138,7 +138,7 @@
 		{
 			"id": "fish",
 			"trigger": "workbench_placed",
-			"text": "Catch a fish: jab your spear into shallow water, or make a fishing rod (its hook is carved from a bone).",
+			"text": "Catch a fish: jab a Fishing spear into shallow water, or make a Fishing rod (its Hook is carved from a bone).",
 			"goal": "fish"
 		},
 		{
@@ -185,12 +185,12 @@
 		{
 			"id": "sea_water",
 			"trigger": "beach_with_bucket",
-			"text": "With a bucket or jug at the sea, press E for water."
+			"text": "With a Clay - Pot, Bucket, Clay jug or Waterskin at the sea, press E for sea water."
 		},
 		{
 			"id": "sea_salt",
 			"trigger": "has_sea_water",
-			"text": "Boil sea water in a pot to make salt. Salt keeps meat."
+			"text": "Boil 2 sea water in the Campfire pot to make Salt. Salt keeps meat and fish."
 		},
 		{
 			"id": "season_change",

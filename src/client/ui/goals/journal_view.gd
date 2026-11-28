@@ -256,7 +256,7 @@ func _row(text: String, chosen: bool, lit: bool, mark: Control, on_press: Callab
 	entry.focus_mode = Control.FOCUS_NONE
 	entry.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	entry.text = text
-	entry.clip_text = true
+	entry.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART   # a long goal name at a big text size wraps onto a second line instead of being cut off (Dave 28 Nov 2026)
 	entry.custom_minimum_size = Vector2(0.0, 44.0)
 	entry.add_theme_font_override("font", ArtKit.font("garamond_semibold"))
 	entry.add_theme_font_size_override("font_size", _items.text_px(22))
@@ -265,6 +265,15 @@ func _row(text: String, chosen: bool, lit: bool, mark: Control, on_press: Callab
 	InventoryLook.style_recipe_row(entry, lit, chosen, InventoryLook.unit_of(_items))
 
 	if mark != null:
+		var boxes: Array = []
+
+		for look in ["normal", "hover", "pressed", "focus"]:
+			var box: StyleBox = entry.get_theme_stylebox(look)
+
+			if box != null and not boxes.has(box):   # hover and focus share one box
+				boxes.append(box)
+				box.content_margin_right += mark.custom_minimum_size.x + 10.0   # wrapped text keeps clear of the tick
+
 		var holder: HBoxContainer = HBoxContainer.new()
 		holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		holder.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -286,7 +295,7 @@ func _link(text: String, on_press: Callable) -> Button:
 	button.flat = true
 	button.focus_mode = Control.FOCUS_NONE
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART   # "Next: <a long goal>" wraps inside the panel at a big text size
 	button.add_theme_font_override("font", ArtKit.font("garamond_semibold"))
 	button.add_theme_font_size_override("font_size", _items.text_px(22))
 	button.add_theme_color_override("font_color", ArtKit.HEADING)
@@ -319,6 +328,7 @@ func _show_tabs() -> void:
 func _tab(text: String, chosen: bool, can: bool, on_press: Callable) -> Button:
 	var tab: Button = _row(text, chosen, can or chosen, null, on_press)
 	tab.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tab.autowrap_mode = TextServer.AUTOWRAP_OFF   # a tab sizes to its one line (rows wrap, tabs do not)
 	tab.clip_text = false
 	tab.disabled = not can
 	tab.add_theme_stylebox_override("disabled", tab.get_theme_stylebox("normal"))   # a dim end button in the book's look, not the engine's grey

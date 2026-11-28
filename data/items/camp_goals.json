@@ -49,7 +49,7 @@
 		{
 			"id": "candle",
 			"title": "Make a candle",
-			"hint": "Render 2 animal fat into tallow at the campfire pot, then make candles (tallow and a plant fibre) to light your shelter. Rabbits give no fat: hunt a deer, boar or badger for it.",
+			"hint": "Render 2 animal fat into Tallow at the Campfire pot, then open the inventory (I) and craft a Candle from 1 tallow and 1 plant fibre to light your shelter. Rabbits give no fat: hunt a deer, boar or badger for it.",
 			"after": [
 				"shelter",
 				"campfire_pot",
@@ -80,8 +80,8 @@
 		},
 		{
 			"id": "sea_salt",
-			"title": "Boil sea salt",
-			"hint": "Fire another Clay - Pot (6 clay) at the campfire, carry it to the sea and press E at the water's edge for sea water, then boil 2 sea water into salt at the campfire pot. Smoked fish, jerky and salted fish need it.",
+			"title": "Boil salt from sea water",
+			"hint": "Fire another Clay - Pot (6 clay) at the campfire, carry it to the sea and press E at the water's edge for sea water, then boil 2 sea water into Salt at the Campfire pot. Smoked fish, Jerky and Salted fish need it.",
 			"after": [
 				"campfire_pot"
 			],
@@ -95,7 +95,7 @@
 		{
 			"id": "smoke_fish",
 			"title": "Smoke a fish",
-			"hint": "Catch a fish and smoke it with a salt in the smoker. Salt is boiled from sea water at the campfire pot.",
+			"hint": "Catch a fish and smoke it with 1 Salt in the Smoker. Salt is boiled from sea water at the Campfire pot.",
 			"after": [
 				"fish",
 				"smoker",
@@ -142,7 +142,7 @@
 		{
 			"id": "food_basket",
 			"title": "Make a food store",
-			"hint": "Hold your knife, press R and pick Wicker basket: 8 sticks and 4 twine. A Hide - Sack (2 hides, 1 twine) or a Storage jar (8 clay), built with the hammer, does too, and food keeps longer in any of them than in your pack. For the whole winter you will want a Storage barrel (hammer, with a bronze chisel or better on the hand bar, R: 4 hardwood boards, 2 twine, 8 bronze nails).",
+			"hint": "Hold your knife, press R and pick Wicker basket: 8 sticks and 4 twine. A Hide - Sack (2 hides, 1 twine) or a Storage jar (8 clay), built with the hammer, does too, and food keeps longer in any of them than in your pack. For the whole winter you will want a Storage barrel (hammer, with a Bronze - Chisel or better on the hand bar, R: 4 hardwood boards, 2 twine, 8 bronze nails).",
 			"after": [
 				"hammer",
 				"knife"
@@ -229,7 +229,7 @@
 		{
 			"id": "jerky",
 			"title": "Make jerky",
-			"hint": "Dry 2 raw meat with a salt on the drying rack. Salt is boiled from sea water at the campfire pot.",
+			"hint": "Dry 2 raw meat with 1 Salt on the Drying rack. Salt is boiled from sea water at the Campfire pot.",
 			"after": [
 				"hunt",
 				"drying_rack",
@@ -245,7 +245,7 @@
 		{
 			"id": "salted_fish",
 			"title": "Salt a fish",
-			"hint": "Cure a trout in salt at the campfire pot for the winter store.",
+			"hint": "Cure a fish with 1 Salt at the Campfire pot for the winter store.",
 			"after": [
 				"fish",
 				"sea_salt"
@@ -280,8 +280,8 @@
 		},
 		{
 			"id": "sewing_needle",
-			"title": "Make a Sewing needle",
-			"hint": "Craft a Sewing needle from a bone. With it and thread (2 plant fibre) you sew hides into clothes.",
+			"title": "Make a Bone - Needle",
+			"hint": "Open the inventory (I) and craft a Bone - Needle from 1 bone. With it and Thread (2 plant fibre) you sew hides into clothes.",
 			"after": [
 				"hunt"
 			],
@@ -296,7 +296,7 @@
 		{
 			"id": "fur_for_winter",
 			"title": "Dress for the cold",
-			"hint": "Wear a full hide set or better before winter: with the needle in your pack, sew hides and thread into a hood, cloak, trousers, boots and gloves (a cloak takes 3 hides and 2 thread). That means hunting more than one rabbit.",
+			"hint": "Wear a full hide set or better before winter: with the needle in your pack, sew hides and thread into a Hide - Hood, Hide - Cloak, Hide - Trousers, Hide - Boots and Hide - Gloves (a cloak takes 3 hides and 2 thread). That means hunting more than one rabbit.",
 			"after": [
 				"sewing_needle"
 			],
@@ -355,7 +355,7 @@
 		{
 			"id": "copper_ore",
 			"title": "Find copper ore",
-			"hint": "Copper ore is rock coated green or blue-green. There is little by the coast: follow a river or stream inland and upstream, where copper rocks lie along the water, more and bigger toward the hills, up to green outcrops where it comes from. Pick small pieces up with E; break bigger rocks with any pick or the Stone - Hammer. Nine pieces: three for the copper ingots now and six more for bronze later.",
+			"hint": "This is a journey, not a walk round camp. There is no copper by the sea: it lies inland, along rivers and streams toward the hills, richest round the foot of the mountains and on the first high ground. Expect well over a kilometre, so take food, water and a torch. Your campfire shows on the map (M), so you can find your way back. Follow a river upstream: green or blue-green stained pebbles in the stream bed mean copper further up. They get bigger and commoner until you reach green outcrops. Pick small pieces up with E; break bigger rocks with any pick or the Stone - Hammer. Nine pieces: three for the copper ingots now and six more for bronze later.",
 			"after": [
 				"hammer"
 			],
@@ -448,8 +448,8 @@
 		},
 		{
 			"id": "hide_scraper",
-			"title": "Make a Hide scraper",
-			"hint": "At the Workbench make a Hide scraper: a flint, a stick and a twine. Flint now and then comes away when you break a boulder with a pick. The scraper is kept when you scrape a hide.",
+			"title": "Make a Scraper",
+			"hint": "At the Wooden - Workbench make a Scraper: a flint, a stick and a twine. Flint now and then comes away when you break a boulder with a pick. The scraper is kept when you scrape a hide.",
 			"after": [
 				"workbench",
 				"tanning_rack"
@@ -464,7 +464,7 @@
 		{
 			"id": "leather",
 			"title": "Tan leather",
-			"hint": "With the Hide scraper in your pack, scrape a hide on the drying rack into a Scraped hide. Then tan it on the tanning rack with 2 tannin bark and a full water container. Tannin bark lies beside the logs when you fell an oak. Each hide makes a Leather.",
+			"hint": "With the Scraper in your pack, scrape a hide on the Drying rack into a Scraped hide. Then tan it on the Tanning rack with 2 Tanbark and a full water container. Tanbark lies beside the logs when you fell an oak. Each hide makes a Leather.",
 			"after": [
 				"tanning_rack",
 				"hide_scraper",
@@ -531,7 +531,7 @@
 		{
 			"id": "tin_ore",
 			"title": "Find tin ore",
-			"hint": "Tin ore is a dark, very heavy rock, rarer than copper and farther inland. Look in river beds below the high hills and follow the finds upstream to where they come from. Break it like copper ore, with any pick or the Stone - Hammer. Six pieces, each smelted with a copper ore, make the twelve bronze ingots the next steps need.",
+			"hint": "This is a journey, not a walk round camp. Tin is rarer than copper and farther inland still, below the high mountains, often beyond the copper. In streams it shows as small, glassy, dark brown to black pebbles, very heavy for their size; follow them upstream. At its source it is pale, speckled rock with white quartz veins and dark crystals. Plan a longer trip than for copper. Break it like copper ore, with any pick or the Stone - Hammer. Six pieces, each smelted with a copper ore, make the twelve bronze ingots the next steps need.",
 			"after": [
 				"copper_ingot"
 			],
@@ -717,7 +717,7 @@
 		{
 			"id": "advanced_smelter",
 			"title": "Build an Advanced smelter",
-			"hint": "Hold your hammer, press R and pick Advanced smelter: 40 bricks, 40 stones, 8 mortar and 6 iron ingots. Its windmill drives its bellows, and it makes steel.",
+			"hint": "Hold your hammer, press R and pick Advanced smelter: 40 bricks, 40 stones, 8 clay mortar and 6 iron ingots. Its windmill drives its bellows, and it makes steel.",
 			"after": [
 				"iron_ingot"
 			],
@@ -744,7 +744,7 @@
 		{
 			"id": "advanced_smithy",
 			"title": "Build an Advanced smithy",
-			"hint": "Make an Iron anvil at the Improved smithy (5 iron ingots, 1 log), then hold your hammer, press R and pick Advanced smithy. Steel tools are made at it.",
+			"hint": "Make an Iron anvil at the Improved smithy (5 iron ingots, 1 log), and Iron nails and Iron hinges there (1 iron ingot each), then hold your hammer, press R and pick Advanced smithy: 48 stones, 12 clay, 6 logs, the Iron anvil, 30 iron nails and 4 iron hinges. Steel tools are made at it.",
 			"after": [
 				"iron_tool"
 			],
