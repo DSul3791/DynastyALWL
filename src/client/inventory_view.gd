@@ -81,7 +81,7 @@ const GoalsHudScript := preload("res://src/client/ui/goals/goals_hud.gd")       
 const GoalPlacardScript := preload("res://src/client/ui/goals/goal_placard.gd")     # the Goal Achieved placard
 const JournalScript := preload("res://src/client/ui/goals/journal_view.gd")         # the Journal: Index, Goals, Skills, Map (J, G, M)
 const InventoryFrameScript := preload("res://src/client/ui/inventory/inventory_frame.gd")   # the redesign's three panels (step 3a)
-const YouColumnScript := preload("res://src/client/ui/inventory/you_column.gd")             # the gear wells and the live character (step 3d)
+const YouColumnScript := preload("res://src/client/ui/inventory/you_column.gd")             # the worn wells (R-HUD-INVENTORY-WORN)
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
 var _recipe_part: RecipeListScript             # the Make column: search, tabs, recipes, the chosen recipe and Craft
 var _pack_part: PackGridScript                 # the pack column: weight, sort, the slot grid and the action row
@@ -104,12 +104,12 @@ func _init() -> void:
 
 var _panel: PanelContainer
 var _frame: InventoryFrameScript       # the window's frame: backdrop, the three panels and their title plates (inventory_frame.gd)
-var _you_box: VBoxContainer            # the You column's gear, live character and stats
+var _you_box: VBoxContainer            # the You column's worn wells and stats
 var _craft_root: Control               # the Craft column's recipes and card (recipe_list.gd); an open container shows in its place (4.4)
 var _craft_tabs: Array = []            # the Chest and Craft tabs on the Craft panel's title row, shown while a container is open
 var _text_buttons: Array = []          # Text - and Text + on the same row, hidden while the tabs are there
 var chest_tab: bool = true             # with a container open: true shows the container, false the recipes (Craft still works with it open)
-var _you_part: YouColumnScript         # the gear wells and the live character (you_column.gd)
+var _you_part: YouColumnScript         # the worn wells (you_column.gd)
 var _panel_values: Dictionary = {}     # stat name -> its value label in the You column
 var _grid: GridContainer
 var _buttons: Array = []
@@ -546,9 +546,6 @@ func toggle() -> void:
 
 	if not open:
 		_end_drag()
-
-	if _you_part != null:
-		_you_part.set_active(open)
 
 
 # Esc in the search box (while it has focus and holds text) empties it instead of closing the menu. True when it did.
@@ -3136,9 +3133,6 @@ func _on_chest(id: int, bytes: PackedByteArray) -> void:
 		_container_part.build()
 		_show_tab()
 
-		if _you_part != null:
-			_you_part.set_active(true)
-
 		_refresh()
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
@@ -3161,9 +3155,6 @@ func _close_chest() -> void:
 	_station_screen = 0
 	_recipe_part.stop()   # the window shut: a half-worked recipe list is dropped
 	_show_tab()
-
-	if _you_part != null:
-		_you_part.set_active(false)
 
 	if _panel != null:
 		_panel.visible = false
@@ -6535,9 +6526,6 @@ func set_text_scale(scale: float) -> void:
 
 			_refresh()
 
-			if _you_part != null:
-				_you_part.set_active(true)
-
 
 func text_px(size: int) -> int:
 	return _px(size)
@@ -7077,7 +7065,7 @@ func _build_panel() -> void:
 
 	_frame.set_title(1, _you_title())
 
-	# You: the gear wells and the live character, an ornament rule, then the six stats.
+	# You: the worn wells, an ornament rule, then the six stats.
 	_you_box = VBoxContainer.new()
 	_you_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_you_box.add_theme_constant_override("separation", 6)   # with the gear wells 6 apart, the stats fit the column at text 1.2 (was 12: 43 px over)
